@@ -1,0 +1,42 @@
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530838065,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530838067,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530838082,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530838083,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530838095,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530838096,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"P","hasAutocomplete":true},"timestamp":1773530841260,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pa","hasAutocomplete":true},"timestamp":1773530841566,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Par","hasAutocomplete":true},"timestamp":1773530841916,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pari","hasAutocomplete":true},"timestamp":1773530843374,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Paris","hasAutocomplete":true},"timestamp":1773530844483,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Paris ","hasAutocomplete":true},"timestamp":1773530965758,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530967582,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530967585,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530967609,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530967611,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530967626,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530967626,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"P","hasAutocomplete":true},"timestamp":1773530971140,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pa","hasAutocomplete":true},"timestamp":1773530972116,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Par","hasAutocomplete":true},"timestamp":1773530972250,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pari","hasAutocomplete":true},"timestamp":1773530972415,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Paris","hasAutocomplete":true},"timestamp":1773530972542,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530990390,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Loading Google Maps script","data":{"apiKeyPresent":true,"apiKeyLength":39},"timestamp":1773530990392,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530990410,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530990411,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:loadGoogleMaps","message":"Script loaded successfully","data":{"hasGoogle":true,"hasPlaces":true},"timestamp":1773530990422,"hypothesisId":"H1"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:useEffect","message":"Services initialized","data":{"hasAutocomplete":true,"hasPlaces":true},"timestamp":1773530990423,"hypothesisId":"H5"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"P","hasAutocomplete":true},"timestamp":1773531010543,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pa","hasAutocomplete":true},"timestamp":1773531012139,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Par","hasAutocomplete":true},"timestamp":1773531012249,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Pari","hasAutocomplete":true},"timestamp":1773531012460,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:handleInputChange","message":"Input changed","data":{"value":"Paris","hasAutocomplete":true},"timestamp":1773531012580,"hypothesisId":"H4"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"Parsed suggestions","data":{"suggestionCount":5},"timestamp":1773531237249,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"API response","data":{"status":200},"timestamp":1773531237248,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"API response","data":{"status":200},"timestamp":1773531238589,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"Parsed suggestions","data":{"suggestionCount":5},"timestamp":1773531238595,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"API response","data":{"status":200},"timestamp":1773531238946,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchAutocomplete","message":"Parsed suggestions","data":{"suggestionCount":5},"timestamp":1773531238949,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchPlaceDetails","message":"Details response","data":{"status":200},"timestamp":1773531301527,"hypothesisId":"H2-fix"}
+{"sessionId":"dea4eb","location":"SearchBar.tsx:fetchPlaceDetails","message":"Place data","data":{"name":"Paris","lat":48.857547499999995,"lng":2.3513764999999998},"timestamp":1773531301529,"hypothesisId":"H2-fix"}
