@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Source, Layer } from 'react-map-gl'
+import { Source, Layer, LayerProps } from 'react-map-gl'
 import { Country, MapMode } from '@/lib/types'
 
 const VISITED_COLOR = '#E8735A'
@@ -36,7 +36,7 @@ export default function CountryLayer({ countries, mode }: CountryLayerProps) {
     return expr
   }, [countries])
 
-  const countryFillLayer = {
+  const countryFillLayer: LayerProps = {
     id: 'country-fills',
     type: 'fill' as const,
     'source-layer': 'country_boundaries',
@@ -46,7 +46,7 @@ export default function CountryLayer({ countries, mode }: CountryLayerProps) {
       ['in', 'US', ['get', 'worldview']],
     ],
     paint: {
-      'fill-color': fillColor,
+      'fill-color': fillColor as any,
       'fill-opacity': 0.6,
     },
   }

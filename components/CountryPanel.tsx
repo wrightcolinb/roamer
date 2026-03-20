@@ -33,10 +33,11 @@ export default function CountryPanel({
   onDestinationClick,
 }: CountryPanelProps) {
   if (!countryCode) return null
+  const code = countryCode
 
-  const country = countries.find((c) => c.country_code === countryCode)
-  const countryDests = destinations.filter((d) => d.country_code === countryCode)
-  const displayName = country?.country_name ?? countryName ?? countryCode
+  const country = countries.find((c) => c.country_code === code)
+  const countryDests = destinations.filter((d) => d.country_code === code)
+  const displayName = country?.country_name ?? countryName ?? code
 
   async function handleStatusChange(status: CountryStatus | 'remove') {
     if (status === 'remove') {
@@ -56,12 +57,12 @@ export default function CountryPanel({
         .single()
       if (data) onCountryUpdate(data)
     } else {
-      const continent = getContinentFromCode(countryCode)
+      const continent = getContinentFromCode(code)
       const { data } = await supabase
         .from('countries')
         .insert({
-          country_code: countryCode,
-          country_name: countryName || countryCode,
+          country_code: code,
+          country_name: countryName || code,
           continent,
           status,
         })
