@@ -287,6 +287,7 @@ export default function Home() {
         onClose={() => setSelectedDestination(null)}
         onDestinationUpdate={handleDestinationUpdate}
         onDestinationDelete={handleDestinationDelete}
+        nextUpCount={nextUpCount}
       />
       <CountryPanel
         countryCode={selectedCountryCode}
@@ -305,6 +306,12 @@ export default function Home() {
         mapRef={mapRef}
         mapContainerRef={mapContainerRef}
       />
+      {mode === 'fill' && (
+        <div
+          className="fixed inset-0 z-50 pointer-events-none"
+          style={{ boxShadow: 'inset 0 0 0 3px #E8735A' }}
+        />
+      )}
       <OnboardingCallout visible={showOnboarding} />
       <ModeToggle mode={mode} onToggle={handleToggle} />
     </main>

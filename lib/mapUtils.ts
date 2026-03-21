@@ -78,7 +78,7 @@ export function getCategoryEmoji(placeName: string): string {
 export const SENTIMENT_QUOTE_COLORS: Record<Sentiment, string> = {
   recommend: '#1D9E75',
   meh: '#6B7280',
-  skip: '#D85A30',
+  skip: '#E8735A',
 }
 
 /** Full emoji picker palette for category overrides. */

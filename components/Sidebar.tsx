@@ -13,6 +13,7 @@ interface SidebarProps {
   onClose: () => void
   onDestinationUpdate: (dest: Destination) => void
   onDestinationDelete: (destId: string) => void
+  nextUpCount: number
 }
 
 const MOCK_FRIENDS = [
@@ -21,20 +22,35 @@ const MOCK_FRIENDS = [
   { initials: 'AL', color: 'bg-orange-500', name: 'Alex Liu', year: 2020, note: 'Central Park is huge! Don\'t try to see it all in one day.' },
 ]
 
+/** Most recent year_start first; missing year_start at the end. */
+function sortVisitsByYearStartDesc(visits: Visit[]): Visit[] {
+  return [...visits].sort((a, b) => {
+    const ya = a.year_start ?? null
+    const yb = b.year_start ?? null
+    if (ya == null && yb == null) return 0
+    if (ya == null) return 1
+    if (yb == null) return -1
+    return yb - ya
+  })
+}
+
 export default function Sidebar({
   destination,
   onClose,
   onDestinationUpdate,
   onDestinationDelete,
+  nextUpCount,
 }: SidebarProps) {
-  const [visits, setVisits] = useState<Visit[]>(destination?.visits ?? [])
+  const [visits, setVisits] = useState<Visit[]>(() =>
+    sortVisitsByYearStartDesc(destination?.visits ?? [])
+  )
   const [placeNotes, setPlaceNotes] = useState<PlaceNote[]>([])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showAddVisit, setShowAddVisit] = useState(false)
   const [showAddPlace, setShowAddPlace] = useState(false)
 
   useEffect(() => {
-    setVisits(destination?.visits ?? [])
+    setVisits(sortVisitsByYearStartDesc(destination?.visits ?? []))
   }, [destination])
 
   useEffect(() => {
@@ -58,6 +74,18 @@ export default function Sidebar({
 
   async function handleNextUpToggle() {
     const newNextUp = !destination!.next_up
+
+    // Toggling on — enforce the 5-slot cap (button is disabled, this is belt-and-suspenders)
+    if (newNextUp && nextUpCount >= 5) return
+
+    // Toggling off with no visits — destination has no state, delete it entirely
+    if (!newNextUp && visits.length === 0) {
+      await supabase.from('destinations').delete().eq('id', destination!.id)
+      onDestinationDelete(destination!.id)
+      onClose()
+      return
+    }
+
     const { data } = await supabase
       .from('destinations')
       .update({ next_up: newNextUp, next_up_year: newNextUp ? destination!.next_up_year : null })
@@ -81,19 +109,21 @@ export default function Sidebar({
   // ── Visit CRUD ────────────────────────────────────────────────────
 
   function handleVisitChange(updated: Visit) {
-    const newVisits = visits.map((v) => (v.id === updated.id ? updated : v))
+    const newVisits = sortVisitsByYearStartDesc(
+      visits.map((v) => (v.id === updated.id ? updated : v))
+    )
     setVisits(newVisits)
     onDestinationUpdate({ ...destination!, visits: newVisits })
   }
 
   function handleVisitDelete(visitId: string) {
-    const newVisits = visits.filter((v) => v.id !== visitId)
+    const newVisits = sortVisitsByYearStartDesc(visits.filter((v) => v.id !== visitId))
     setVisits(newVisits)
     onDestinationUpdate({ ...destination!, visits: newVisits })
   }
 
   function handleAddVisitSave(visit: Visit) {
-    const newVisits = [...visits, visit]
+    const newVisits = sortVisitsByYearStartDesc([...visits, visit])
     setVisits(newVisits)
     onDestinationUpdate({ ...destination!, visits: newVisits })
     setShowAddVisit(false)
@@ -139,24 +169,28 @@ export default function Sidebar({
           <h2 className="text-xl font-semibold text-gray-800 pr-8">
             {destination.name}
           </h2>
-          {destination.country_name && (
+          {destination.country_name && destination.country_name !== destination.name && (
             <p className="text-sm text-gray-500 mt-1">{destination.country_name}</p>
           )}
 
           {/* ── Next Up toggle ───────────────────────────────────── */}
-          <div className="mt-4 flex items-center gap-3">
-            <button
-              onClick={handleNextUpToggle}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                destination.next_up ? 'bg-[#7C3AED]' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                  destination.next_up ? 'translate-x-4' : 'translate-x-1'
-                }`}
-              />
-            </button>
+          <div className="mt-4 flex items-center gap-3 pb-5">
+            <div className="relative">
+              <button
+                onClick={handleNextUpToggle}
+                disabled={!destination.next_up && nextUpCount >= 5}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  destination.next_up ? 'bg-[#7C3AED]' : 'bg-gray-200'
+                } disabled:cursor-not-allowed`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                    destination.next_up ? 'translate-x-4' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className="absolute top-full left-0 right-0 mt-1 text-xs text-gray-400 text-center whitespace-nowrap">{nextUpCount} of 5 used</span>
+            </div>
             <span className="text-sm text-gray-600">Next up</span>
             {destination.next_up && (
               <input

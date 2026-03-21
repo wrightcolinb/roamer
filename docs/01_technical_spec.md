@@ -87,7 +87,10 @@ create table visits (
   destination_id uuid not null references destinations(id) on delete cascade,
   type text not null check (type in ('visited', 'lived')),
   year_start integer,
-  year_end integer,                    -- set for multi-year stays (lived), otherwise same as year_start
+  month_start integer check (month_start between 1 and 12),
+  year_end integer,                    -- set for multi-year stays (lived), otherwise null
+  month_end integer check (month_end between 1 and 12),
+  notes text default '',               -- freetext personal context for this visit
   created_at timestamp with time zone default now()
 );
 
@@ -113,6 +116,8 @@ create table place_notes (
 - Next Up destinations: enforce a maximum of 5 in application logic, not the DB.
 - `on delete cascade` on visits and place_notes ensures child records are cleaned up when a destination is deleted.
 - `country_code` and `country_name` are stored on destinations to enable stat calculations without joins. Populate from Google Places response when the destination is created.
+- `month_start` and `month_end` on visits are stored as integers 1–12. Convert to display names (January, February etc.) in the frontend using `lib/formatUtils.ts`. Never store month names as strings in the DB.
+- `notes` on visits is freetext personal context for that specific trip — why you were there, what the experience was like. This is distinct from place_notes which are structured sentiment items about specific places within the destination.
 
 ---
 
@@ -216,18 +221,18 @@ Search is the only way to add destinations. Map click-to-add is removed in v2.
 
 Slides in from the right on desktop, up from the bottom on mobile. Opens when a destination pin is clicked in Explore Mode.
 
-Displays:
+Displays (top to bottom):
 - Destination name and country
 - Next Up toggle — if destination has no visits, shows as the primary state. If destination has visits, shows as a secondary checkbox ("Also planning a return?"). Saves immediately on change.
-- Visit history section: each visit shown as a card with type (visited/lived), year_start, year_end — all editable inline, save on blur. Delete button per visit.
-- "Add another visit" button — opens a small inline form: type toggle (visited/lived), year_start input, year_end input (shown only if lived selected), save button
-- Sentiment notes section: three columns (Recommend / Meh / Skip)
-  - Each column shows logged place notes
+- Visit history section: each visit shown as a clean non-editable card by default. Card displays: type pill (Visited/Lived in appropriate color), formatted date string (e.g. "March 2012", "2012", "Feb–June 2012", "2012–2014"), notes text if present. Small edit icon switches card into edit mode. Edit mode shows: type toggle, month_start select (optional), year_start input, month_end select (optional, lived only), year_end input (optional, lived only), notes textarea, save button, delete button. Save returns card to display state.
+- "Add visit" button — inline form with same fields as edit mode above. Save writes to visits table and returns to display state.
+- Place Notes section (below visit history, clear visual separator): three columns (Recommend / Meh / Skip)
+  - Each column shows logged place notes for this destination
   - Add button per column: opens PlaceNoteInput — Google Places autocomplete scoped to destination area, optional short text note, save button
   - Each note item shows place name + note text, with a delete button
 - Delete destination button with confirm dialog ("Remove [name] from your map?")
 
-Auto-save on blur for year fields. Type and state changes save immediately.
+Visit saves are explicit (save button click), not auto-save on blur. Next Up toggle saves immediately.
 
 ---
 
@@ -281,6 +286,7 @@ The choropleth fill makes this export significantly more visually compelling tha
   /types.ts                   — TypeScript types
   /mapUtils.ts                — pin state derivation logic, country promotion logic, export helpers
   /countryUtils.ts            — ISO country code helpers, continent mapping
+  /formatUtils.ts             — date/month formatting helpers (month integer to name, visit date display string)
 /styles
   /globals.css                — Tailwind base styles
 ```
@@ -329,7 +335,10 @@ export interface Visit {
   destination_id: string
   type: VisitType
   year_start?: number
-  year_end?: number
+  month_start?: number        // 1–12, optional
+  year_end?: number           // lived stays only
+  month_end?: number          // 1–12, optional
+  notes: string               // freetext personal context
   created_at: string
 }
 

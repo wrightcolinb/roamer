@@ -14,7 +14,7 @@ interface PlaceNoteCardProps {
 const SENTIMENT_OPTS: { value: Sentiment; label: string; color: string; bg: string }[] = [
   { value: 'recommend', label: 'Recommend', color: '#1D9E75', bg: 'rgba(29, 158, 117, 0.12)' },
   { value: 'meh', label: 'Meh', color: '#6B7280', bg: 'rgba(107, 114, 128, 0.12)' },
-  { value: 'skip', label: 'Skip', color: '#D85A30', bg: 'rgba(216, 90, 48, 0.12)' },
+  { value: 'skip', label: 'Skip', color: '#E8735A', bg: 'rgba(232, 115, 90, 0.12)' },
 ]
 
 export default function PlaceNoteCard({ note, onChange, onDelete }: PlaceNoteCardProps) {

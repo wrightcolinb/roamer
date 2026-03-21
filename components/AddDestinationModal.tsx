@@ -51,7 +51,6 @@ export default function AddDestinationModal({ isOpen, onClose, onSave, placeName
     }
 
     if (selectedType === 'next_up' && nextUpCount >= 5) {
-      setError('You already have 5 Next Up destinations. Remove one first.')
       return
     }
 
@@ -103,18 +102,31 @@ export default function AddDestinationModal({ isOpen, onClose, onSave, placeName
         </h2>
 
         {/* Type selection */}
-        <div className="flex gap-2 mt-4">
-          {TYPE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleTypeSelect(opt.value)}
-              className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
-                selectedType === opt.value ? opt.activeColor : opt.color
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="flex gap-2 mt-4 items-start">
+          {TYPE_OPTIONS.map((opt) => {
+            const isNextUpFull = opt.value === 'next_up' && nextUpCount >= 5
+            return (
+              <div key={opt.value} className="flex-1 flex flex-col items-stretch">
+                <button
+                  onClick={() => !isNextUpFull && handleTypeSelect(opt.value)}
+                  disabled={isNextUpFull}
+                  className={`w-full py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
+                    isNextUpFull
+                      ? 'border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed'
+                      : selectedType === opt.value ? opt.activeColor : opt.color
+                  }`}
+                >
+                  {opt.label}
+                </button>
+                {isNextUpFull && (
+                  <p className="mt-1 text-xs text-gray-400 text-center">5 of 5 used</p>
+                )}
+                {opt.value === 'next_up' && !isNextUpFull && selectedType === 'next_up' && (
+                  <p className="mt-1 text-xs text-gray-400 text-center">{nextUpCount}/5 slots used</p>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Month + Year inputs — conditional on visited / lived */}

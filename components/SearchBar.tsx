@@ -41,6 +41,7 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
   const sessionTokenRef = useRef<any>(null)
@@ -83,9 +84,11 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
             placePrediction: s.placePrediction,
           }))
       )
+      setIsLoading(false)
       setIsOpen(true)
     } catch {
       setPredictions([])
+      setIsLoading(false)
     }
   }, [])
 
@@ -96,10 +99,13 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
 
     if (value.length < 2) {
       setPredictions([])
+      setIsLoading(false)
       setIsOpen(false)
       return
     }
 
+    setIsLoading(true)
+    setIsOpen(true)
     debounceRef.current = setTimeout(() => {
       fetchPredictions(value)
     }, 300)
@@ -160,7 +166,7 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
   return (
     <div
       ref={containerRef}
-      className="fixed top-4 left-4 right-4 md:right-auto md:w-96 z-10"
+      className="fixed top-4 left-4 right-[60px] md:right-auto md:w-96 z-10"
     >
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -178,23 +184,33 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
           className="w-full px-4 py-3 pl-10 bg-white rounded-xl shadow-lg border border-gray-100 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
         />
 
-        {isOpen && predictions.length > 0 && (
+        {isOpen && (isLoading || predictions.length > 0) && (
           <ul role="listbox" className="absolute top-full mt-1 w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            {predictions.map((p, i) => (
-              <li
-                key={p.placeId}
-                id={`prediction-${i}`}
-                role="option"
-                aria-selected={i === highlightedIndex}
-                onClick={() => handleSelect(p)}
-                onMouseEnter={() => setHighlightedIndex(i)}
-                className={`px-4 py-3 text-sm text-gray-700 cursor-pointer border-b border-gray-50 last:border-b-0 ${
-                  i === highlightedIndex ? 'bg-gray-100' : 'hover:bg-gray-50'
-                }`}
-              >
-                {p.text}
-              </li>
-            ))}
+            {isLoading ? (
+              <>
+                {[72, 56, 64].map((w, i) => (
+                  <li key={i} className="px-4 py-3 border-b border-gray-50 last:border-b-0">
+                    <div className="h-3 bg-gray-100 rounded animate-pulse" style={{ width: `${w}%` }} />
+                  </li>
+                ))}
+              </>
+            ) : (
+              predictions.map((p, i) => (
+                <li
+                  key={p.placeId}
+                  id={`prediction-${i}`}
+                  role="option"
+                  aria-selected={i === highlightedIndex}
+                  onClick={() => handleSelect(p)}
+                  onMouseEnter={() => setHighlightedIndex(i)}
+                  className={`px-4 py-3 text-sm text-gray-700 cursor-pointer border-b border-gray-50 last:border-b-0 ${
+                    i === highlightedIndex ? 'bg-gray-100' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {p.text}
+                </li>
+              ))
+            )}
           </ul>
         )}
       </div>
