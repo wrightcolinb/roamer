@@ -309,7 +309,7 @@ export default function Home() {
       {mode === 'fill' && (
         <div
           className="fixed inset-0 z-50 pointer-events-none"
-          style={{ boxShadow: 'inset 0 0 0 3px #E8735A' }}
+          style={{ boxShadow: 'inset 0 0 0 4px #E8735A, inset 0 0 80px rgba(232, 115, 90, 0.3)' }}
         />
       )}
       <OnboardingCallout visible={showOnboarding} />

@@ -29,7 +29,7 @@ export default function StatBlock({ countries, destinations }: StatBlockProps) {
     : TOTAL_SLOTS - nextUpDestinations.length
 
   return (
-    <div className="absolute bottom-8 left-3 z-10 md:bottom-8 md:left-6">
+    <div className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] left-3 z-10 md:bottom-8 md:left-6">
       <div
         style={{
           background: 'rgba(255, 252, 242, 0.82)',

@@ -1,9 +1,14 @@
 import '@/styles/globals.css'
 import Script from 'next/script'
+import type { Viewport } from 'next'
 
 export const metadata = {
   title: 'Roamer',
   description: 'Your personal travel map',
+}
+
+export const viewport: Viewport = {
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

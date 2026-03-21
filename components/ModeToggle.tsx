@@ -30,7 +30,7 @@ export default function ModeToggle({ mode, onToggle }: ModeToggleProps) {
     <button
       onClick={onToggle}
       className={`
-        fixed bottom-8 right-6 z-10
+        fixed bottom-[calc(2rem+env(safe-area-inset-bottom))] right-6 z-10 md:bottom-8
         px-4 py-2.5 rounded-xl shadow-lg
         font-medium text-sm
         flex items-center gap-2
