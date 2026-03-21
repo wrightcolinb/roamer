@@ -1,3 +1,9 @@
+export interface User {
+  id: string
+  slug: string
+  display_name: string
+}
+
 export type VisitType = 'visited' | 'lived'
 export type PinState = 'visited' | 'lived' | 'next_up'
 export type CountryStatus = 'visited' | 'lived'
@@ -17,6 +23,7 @@ export interface Country {
 export interface Visit {
   id: string
   destination_id: string
+  user_id: string
   type: VisitType
   year_start?: number
   month_start?: number

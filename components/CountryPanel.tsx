@@ -4,6 +4,7 @@ import { Country, Destination, CountryStatus } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { getContinentFromCode } from '@/lib/countryUtils'
 import { getPinState } from '@/lib/mapUtils'
+import { useUser } from '@/lib/UserContext'
 
 interface CountryPanelProps {
   countryCode: string | null
@@ -32,6 +33,8 @@ export default function CountryPanel({
   onCountryRemove,
   onDestinationClick,
 }: CountryPanelProps) {
+  const { user } = useUser()
+
   if (!countryCode) return null
   const code = countryCode
 
@@ -61,6 +64,7 @@ export default function CountryPanel({
       const { data } = await supabase
         .from('countries')
         .insert({
+          user_id: user?.id,
           country_code: code,
           country_name: countryName || code,
           continent,

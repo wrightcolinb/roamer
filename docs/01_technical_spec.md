@@ -40,9 +40,10 @@ Phase 1 has two goals: get the data model right, and get the visual right. No AI
 - Shareable image export: full world view with country fill + destination pins + stat block
 - All data persists in Supabase
 
+Lightweight URL-based multi-user support is in scope for Phase 1 (see users table in schema). Full authentication (Google SSO, passwords, sessions) is out of scope.
+
 **Out of scope for Phase 1:**
-- User authentication
-- Multiple users
+
 - Friend notes or social layer
 - AI conversation or AI features of any kind
 - Photos or media
@@ -53,71 +54,94 @@ Phase 1 has two goals: get the data model right, and get the visual right. No AI
 
 ## Database Schema
 
-Four tables. No RLS policies in Phase 1.
+Five tables. No RLS policies. Schema matches the live Supabase instance as of 2026-03-21.
 
 ```sql
+-- Identity: one row per Roamer user, looked up by URL slug
+create table users (
+  id           uuid not null default gen_random_uuid() primary key,
+  slug         text not null unique,       -- URL-safe identifier, e.g. 'colin' → /u/colin
+  display_name text not null,              -- shown in friend notes section
+  email        text unique,                -- not used by the app yet; reserved for future auth
+  auth_id      uuid unique,               -- not used by the app yet; reserved for future auth
+  created_at   timestamp with time zone default now()
+);
+
 -- Countries the user has visited or lived in
 create table countries (
-  id uuid default gen_random_uuid() primary key,
-  country_code text not null unique,   -- ISO 3166-1 alpha-2 e.g. 'ES'
+  id           uuid not null default gen_random_uuid() primary key,
+  user_id      uuid references users(id), -- scopes record to a user
+  country_code text not null,              -- ISO 3166-1 alpha-2 e.g. 'ES'
   country_name text not null,
-  continent text,
-  status text not null check (status in ('visited', 'lived')),
-  created_at timestamp with time zone default now()
+  continent    text,
+  status       text not null check (status in ('visited', 'lived')),
+  created_at   timestamp with time zone default now()
+  -- No UNIQUE constraint on country_code or (user_id, country_code).
+  -- Uniqueness per user is enforced in application logic only.
 );
 
 -- Specific destinations: cities, neighborhoods, or country centroids
 create table destinations (
-  id uuid default gen_random_uuid() primary key,
-  name text not null,
-  place_id text,
-  lat float not null,
-  lng float not null,
-  country_code text,                   -- links to countries table by code
+  id           uuid not null default gen_random_uuid() primary key,
+  user_id      uuid references users(id), -- scopes record to a user
+  name         text not null,
+  place_id     text,                       -- Google Places ID, nullable
+  lat          double precision not null,
+  lng          double precision not null,
+  country_code text,                       -- denormalised from Places API response
   country_name text,
-  continent text,
-  next_up boolean not null default false,  -- true if this is a Next Up destination
-  next_up_year integer,                    -- optional target year for Next Up
-  created_at timestamp with time zone default now()
+  continent    text,
+  next_up      boolean not null default false,
+  next_up_year integer,
+  created_at   timestamp with time zone default now()
 );
 
 -- Visit records: each destination can have multiple visits over time
 create table visits (
-  id uuid default gen_random_uuid() primary key,
-  destination_id uuid not null references destinations(id) on delete cascade,
-  type text not null check (type in ('visited', 'lived')),
-  year_start integer,
-  month_start integer check (month_start between 1 and 12),
-  year_end integer,                    -- set for multi-year stays (lived), otherwise null
-  month_end integer check (month_end between 1 and 12),
-  notes text default '',               -- freetext personal context for this visit
-  created_at timestamp with time zone default now()
+  id             uuid not null default gen_random_uuid() primary key,
+  destination_id uuid not null references destinations(id),
+  user_id        uuid references users(id), -- populated from active user context on insert
+  type           text not null check (type in ('visited', 'lived')),
+  year_start     integer,
+  month_start    integer check (month_start >= 1 and month_start <= 12),
+  year_end       integer,                  -- set for multi-year stays (lived), otherwise null
+  month_end      integer check (month_end >= 1 and month_end <= 12),
+  notes          text default '',          -- freetext personal context for this visit
+  created_at     timestamp with time zone default now()
+  -- No ON DELETE CASCADE — deleting a destination does not automatically delete its visits.
 );
 
 -- Sentiment notes per destination: recommend / meh / skip items
 create table place_notes (
-  id uuid default gen_random_uuid() primary key,
-  destination_id uuid not null references destinations(id) on delete cascade,
-  place_name text not null,            -- name of the specific place (restaurant, museum, etc.)
-  place_id text,                       -- Google Places ID for the specific place
-  sentiment text not null check (sentiment in ('recommend', 'meh', 'skip')),
-  note text default '',                -- optional short text note
-  created_at timestamp with time zone default now()
+  id             uuid not null default gen_random_uuid() primary key,
+  user_id        uuid references users(id), -- scopes record to a user; used by friend notes query
+  destination_id uuid not null references destinations(id),
+  place_name     text not null,             -- name of the specific place (restaurant, museum, etc.)
+  place_id       text,                      -- Google Places ID for the specific place, nullable
+  sentiment      text not null check (sentiment in ('recommend', 'meh', 'skip')),
+  category_emoji text not null default '📍', -- auto-assigned on insert; user can override via picker
+  note           text default '',           -- optional short text note
+  created_at     timestamp with time zone default now()
+  -- No ON DELETE CASCADE — deleting a destination does not automatically delete its place_notes.
 );
 ```
 
 **Notes on the schema:**
-- `countries` is an independent table. It is not derived from destinations — it has its own lifecycle.
-- Country status auto-promotes (nothing → visited → lived) when a visit record is added, but never auto-demotes. Deletions do not affect country status. The user fixes country status manually if needed.
+
+- `users` is the root identity table. The app looks up a user by `slug` on page load and gates all reads and writes behind that `user_id`. `email` and `auth_id` are present in the DB but unused by the app — they are reserved for a future auth upgrade.
+- `visits` has a `user_id` column populated from the active user context on insert. It can also be accessed via `destination_id`, which carries the ownership chain back to `users`.
+- There is no `ON DELETE CASCADE` on the `visits` or `place_notes` foreign keys. Deleting a destination in the app calls a separate Supabase delete on the destination row; Supabase does not automatically remove child records. If this matters, add `ON DELETE CASCADE` to both FKs in the Supabase dashboard.
+- `countries` has no uniqueness constraint at the DB level — not on `country_code` alone, and not on `(user_id, country_code)`. The app prevents duplicates by checking for an existing record before inserting.
+- `country_code` and `country_name` are stored denormalised on `destinations` to enable stat calculations without joins. Populated from the Google Places API response when a destination is created.
+- Country status auto-promotes (nothing → visited → lived) when a visit record is added, but never auto-demotes. Deletions do not affect country status.
 - Country status promotion rule: if any visit for a destination in that country has type 'lived', promote country to 'lived'. If any visit has type 'visited' and country has no record yet, create it as 'visited'. Next Up destinations do not affect country status.
 - A destination has no state field. Its visual state is derived from its visits array: lived (if any visit has type 'lived') > visited (if any visits exist) > next_up (if next_up = true and no visits). A destination can be both next_up and have visit history simultaneously (planning a return trip).
 - A destination can have multiple visit records — e.g. visited 2008, lived 2012–2014, visited 2019. Each is a separate row in the visits table.
 - Next Up is a boolean flag on the destination, not a visit record. It represents future intent, not a past chapter.
 - Next Up destinations: enforce a maximum of 5 in application logic, not the DB.
-- `on delete cascade` on visits and place_notes ensures child records are cleaned up when a destination is deleted.
-- `country_code` and `country_name` are stored on destinations to enable stat calculations without joins. Populate from Google Places response when the destination is created.
-- `month_start` and `month_end` on visits are stored as integers 1–12. Convert to display names (January, February etc.) in the frontend using `lib/formatUtils.ts`. Never store month names as strings in the DB.
-- `notes` on visits is freetext personal context for that specific trip — why you were there, what the experience was like. This is distinct from place_notes which are structured sentiment items about specific places within the destination.
+- `month_start` and `month_end` on visits are stored as integers 1–12. Convert to display names in the frontend using `lib/formatUtils.ts`. Never store month names as strings in the DB.
+- `notes` on visits is freetext personal context for that specific trip. This is distinct from `place_notes` which are structured sentiment items about specific places within the destination.
+- `place_notes.user_id` is required for the friend notes feature: the `get_friend_notes` Postgres function joins `place_notes → destinations → users` to surface notes from other users at the same destination. See `supabase/get_friend_notes.sql`.
 
 ---
 
@@ -406,7 +430,7 @@ Unchanged from v1. Existing API key with Places API and Geocoding API enabled is
 
 ## Notes for Claude Code
 
-- Do not add authentication in Phase 1 under any circumstances
+- Do not add full authentication (Google SSO, login screens, sessions, or auth libraries) in Phase 1. The users table and slug-based routing are the only identity mechanism in Phase 1.
 - Do not add Row Level Security to Supabase in Phase 1
 - Do not create additional database tables beyond the four defined above
 - Do not install additional dependencies without flagging them first

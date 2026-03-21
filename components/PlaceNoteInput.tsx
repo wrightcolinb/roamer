@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { PlaceNote, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { getCategoryEmoji } from '@/lib/mapUtils'
+import { useUser } from '@/lib/UserContext'
 
 interface PlaceNoteInputProps {
   destinationId: string
@@ -29,6 +30,7 @@ export default function PlaceNoteInput({
   onSave,
   onCancel,
 }: PlaceNoteInputProps) {
+  const { user } = useUser()
   const [placeName, setPlaceName] = useState('')
   const [note, setNote] = useState('')
   const [selectedSentiment, setSelectedSentiment] = useState<Sentiment>('recommend')
@@ -110,6 +112,7 @@ export default function PlaceNoteInput({
     const { data } = await supabase
       .from('place_notes')
       .insert({
+        user_id: user?.id,
         destination_id: destinationId,
         place_name: trimmedName,
         place_id: selectedPlaceId,

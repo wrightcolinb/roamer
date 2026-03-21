@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Destination, PlaceNote, Visit, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
+import { useUser } from '@/lib/UserContext'
 import PlaceNoteInput from '@/components/PlaceNoteInput'
 import PlaceNoteCard from '@/components/PlaceNoteCard'
 import VisitCard from '@/components/VisitCard'
@@ -16,11 +17,14 @@ interface SidebarProps {
   nextUpCount: number
 }
 
-const MOCK_FRIENDS = [
-  { initials: 'SM', color: 'bg-purple-500', name: 'Sarah Miller', year: 2021, note: 'Brooklyn Bridge at sunrise is worth the early alarm.' },
-  { initials: 'JC', color: 'bg-teal-500', name: 'James Chen', year: 2023, note: 'The coffee scene in Williamsburg is incredible. Spent every morning exploring...' },
-  { initials: 'AL', color: 'bg-orange-500', name: 'Alex Liu', year: 2020, note: 'Central Park is huge! Don\'t try to see it all in one day.' },
-]
+interface FriendNote {
+  id: string
+  place_name: string
+  note: string
+  sentiment: Sentiment
+  display_name: string
+  visit_year?: number
+}
 
 /** Most recent year_start first; missing year_start at the end. */
 function sortVisitsByYearStartDesc(visits: Visit[]): Visit[] {
@@ -41,10 +45,12 @@ export default function Sidebar({
   onDestinationDelete,
   nextUpCount,
 }: SidebarProps) {
+  const { user } = useUser()
   const [visits, setVisits] = useState<Visit[]>(() =>
     sortVisitsByYearStartDesc(destination?.visits ?? [])
   )
   const [placeNotes, setPlaceNotes] = useState<PlaceNote[]>([])
+  const [friendNotes, setFriendNotes] = useState<FriendNote[]>([])
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showAddVisit, setShowAddVisit] = useState(false)
   const [showAddPlace, setShowAddPlace] = useState(false)
@@ -53,32 +59,69 @@ export default function Sidebar({
     setVisits(sortVisitsByYearStartDesc(destination?.visits ?? []))
   }, [destination])
 
+  // ── Own place notes ───────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!destination) return
+    if (!destination || !user) return
     let cancelled = false
     async function fetchNotes() {
       const { data } = await supabase
         .from('place_notes')
         .select('*')
         .eq('destination_id', destination!.id)
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
       if (!cancelled && data) setPlaceNotes(data)
     }
     fetchNotes()
     return () => { cancelled = true }
-  }, [destination])
+  }, [destination, user])
+
+  // ── Friend notes ──────────────────────────────────────────────────────────
+  // Single RPC call — the matching logic (place_id OR name+country_code),
+  // max visit year aggregation, and display_name join all happen in Postgres.
+  // See supabase/get_friend_notes.sql.
+
+  useEffect(() => {
+    if (!destination || !user) return
+    let cancelled = false
+
+    async function fetchFriendNotes() {
+      const { data } = await supabase.rpc('get_friend_notes', {
+        p_user_id:      user!.id,
+        p_place_id:     destination!.place_id ?? null,
+        p_name:         destination!.name,
+        p_country_code: destination!.country_code ?? null,
+      })
+
+      if (cancelled || !data?.length) return
+
+      setFriendNotes(
+        data.map((row: any) => ({
+          id:           row.id,
+          place_name:   row.place_name,
+          note:         row.note,
+          sentiment:    row.sentiment as Sentiment,
+          display_name: row.display_name,
+          visit_year:   row.visit_year ?? undefined,
+        }))
+      )
+    }
+
+    setFriendNotes([])
+    fetchFriendNotes()
+    return () => { cancelled = true }
+  }, [destination, user])
 
   if (!destination) return null
 
-  // ── Next Up toggle ────────────────────────────────────────────────
+  // ── Next Up toggle ────────────────────────────────────────────────────────
 
   async function handleNextUpToggle() {
     const newNextUp = !destination!.next_up
 
-    // Toggling on — enforce the 5-slot cap (button is disabled, this is belt-and-suspenders)
     if (newNextUp && nextUpCount >= 5) return
 
-    // Toggling off with no visits — destination has no state, delete it entirely
     if (!newNextUp && visits.length === 0) {
       await supabase.from('destinations').delete().eq('id', destination!.id)
       onDestinationDelete(destination!.id)
@@ -106,7 +149,7 @@ export default function Sidebar({
     if (data) onDestinationUpdate({ ...data, visits })
   }
 
-  // ── Visit CRUD ────────────────────────────────────────────────────
+  // ── Visit CRUD ────────────────────────────────────────────────────────────
 
   function handleVisitChange(updated: Visit) {
     const newVisits = sortVisitsByYearStartDesc(
@@ -129,7 +172,7 @@ export default function Sidebar({
     setShowAddVisit(false)
   }
 
-  // ── Place notes ───────────────────────────────────────────────────
+  // ── Place notes ───────────────────────────────────────────────────────────
 
   function handleNoteChange(updated: PlaceNote) {
     setPlaceNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
@@ -144,7 +187,7 @@ export default function Sidebar({
     setShowAddPlace(false)
   }
 
-  // ── Destination delete ────────────────────────────────────────────
+  // ── Destination delete ────────────────────────────────────────────────────
 
   async function handleDeleteDestination() {
     await supabase.from('destinations').delete().eq('id', destination!.id)
@@ -276,29 +319,33 @@ export default function Sidebar({
             )}
           </div>
 
-          {/* ── Friends who've been here (placeholder) ───────────── */}
-          <div className="mt-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-              Friends who&rsquo;ve been here
-            </p>
+          {/* ── Friends who've been here ─────────────────────────── */}
+          {friendNotes.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                Friends who&rsquo;ve been here
+              </p>
 
-            <div className="space-y-3">
-              {MOCK_FRIENDS.map((friend) => (
-                <div key={friend.initials} className="flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-full ${friend.color} flex items-center justify-center shrink-0`}>
-                    <span className="text-xs font-semibold text-white">{friend.initials}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-sm font-medium text-gray-700">{friend.name}</p>
-                      <span className="text-xs text-gray-400">{friend.year}</span>
+              <div className="space-y-3">
+                {friendNotes.map((fn) => (
+                  <div key={fn.id} className="flex items-start gap-2.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-xs font-medium text-gray-500">{fn.display_name}</p>
+                        {fn.visit_year && (
+                          <span className="text-xs text-gray-300">{fn.visit_year}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-snug italic">
+                        {fn.place_name}
+                        {fn.note ? ` — ${fn.note}` : ''}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5 leading-snug">{friend.note}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <hr className="my-6 border-gray-100" />
 

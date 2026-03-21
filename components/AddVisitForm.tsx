@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Visit, VisitType } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { monthName } from '@/lib/formatUtils'
+import { useUser } from '@/lib/UserContext'
 
 interface AddVisitFormProps {
   destinationId: string
@@ -24,6 +25,7 @@ const TYPE_LABELS: Record<VisitType, string> = {
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
 export default function AddVisitForm({ destinationId, onSave, onCancel }: AddVisitFormProps) {
+  const { user } = useUser()
   const [type, setType] = useState<VisitType>('visited')
   const [monthStart, setMonthStart] = useState<number | undefined>(undefined)
   const [yearStart, setYearStart] = useState('')
@@ -32,6 +34,7 @@ export default function AddVisitForm({ destinationId, onSave, onCancel }: AddVis
   const [notes, setNotes] = useState('')
 
   async function handleSave() {
+    if (!user) return
     const parsedYearStart = yearStart ? parseInt(yearStart, 10) : undefined
     const parsedYearEnd = yearEnd ? parseInt(yearEnd, 10) : undefined
 
@@ -39,6 +42,7 @@ export default function AddVisitForm({ destinationId, onSave, onCancel }: AddVis
       .from('visits')
       .insert({
         destination_id: destinationId,
+        user_id: user.id,
         type,
         month_start: monthStart ?? null,
         year_start: parsedYearStart,
