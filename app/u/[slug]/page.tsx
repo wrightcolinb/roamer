@@ -40,8 +40,10 @@ function MapPageContent() {
   const [mode, setMode] = useState<MapMode>('fill')
   const [countries, setCountries] = useState<Country[]>([])
   const [destinations, setDestinations] = useState<Destination[]>([])
-  /** null until we read localStorage — avoids flashing the tour before we know */
-  const [mapTourSeen, setMapTourSeen] = useState<boolean | null>(null)
+  /** false until countries fetch completes — tour/callout use real counts */
+  const [countriesLoadDone, setCountriesLoadDone] = useState(false)
+  /** null until we read localStorage — avoids flashing the fill hint before we know */
+  const [fillCalloutHidden, setFillCalloutHidden] = useState<boolean | null>(null)
   const [tourModalOpen, setTourModalOpen] = useState(false)
 
   const [selectedPlace, setSelectedPlace] = useState<PlaceSelection | null>(null)
@@ -58,18 +60,30 @@ function MapPageContent() {
 
   const mapRef = useRef<MapHandle>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  /** Only auto-open tour when fetch completes, not when country count drops to 0 later */
+  const countriesWereHydrated = useRef(false)
 
-  const onboardingSeenKey = user ? `roamer_onboarding_seen_${user.slug}` : null
+  const fillCalloutAckKey = user ? `roamer_fill_callout_ack_${user.slug}` : null
 
   useEffect(() => {
-    if (!onboardingSeenKey) return
-    const seen = localStorage.getItem(onboardingSeenKey) === 'true'
-    setMapTourSeen(seen)
-    if (!seen) setTourModalOpen(true)
-  }, [onboardingSeenKey])
+    if (!user || !fillCalloutAckKey) return
+    const acked = localStorage.getItem(fillCalloutAckKey) === 'true'
+    const legacyTourDone =
+      localStorage.getItem(`roamer_onboarding_seen_${user.slug}`) === 'true'
+    if (acked) {
+      setFillCalloutHidden(true)
+    } else if (legacyTourDone) {
+      localStorage.setItem(fillCalloutAckKey, 'true')
+      setFillCalloutHidden(true)
+    } else {
+      setFillCalloutHidden(false)
+    }
+  }, [user, fillCalloutAckKey])
 
   useEffect(() => {
     if (!user) return
+    setCountriesLoadDone(false)
+    countriesWereHydrated.current = false
     async function fetchData() {
       const [countriesRes, destinationsRes, visitsRes] = await Promise.all([
         supabase.from('countries').select('*').eq('user_id', user!.id),
@@ -87,9 +101,18 @@ function MapPageContent() {
         }))
         setDestinations(dests)
       }
+      setCountriesLoadDone(true)
     }
     fetchData()
   }, [user])
+
+  // Anyone with zero countries sees the tour when data loads (each navigation / refresh).
+  useEffect(() => {
+    if (!user || !countriesLoadDone) return
+    if (countriesWereHydrated.current) return
+    countriesWereHydrated.current = true
+    if (countries.length === 0) setTourModalOpen(true)
+  }, [user, countriesLoadDone, countries.length])
 
   const handleToggle = useCallback(() => {
     setMode((prev) => (prev === 'fill' ? 'explore' : 'fill'))
@@ -110,16 +133,16 @@ function MapPageContent() {
 
   const dismissTourModal = useCallback(() => {
     setTourModalOpen(false)
-    if (onboardingSeenKey && localStorage.getItem(onboardingSeenKey) !== 'true') {
-      localStorage.setItem(onboardingSeenKey, 'true')
-      setMapTourSeen(true)
-    }
-  }, [onboardingSeenKey])
+  }, [])
 
   // ── Fill-mode country cycling ─────────────────────────────────────────────
 
-  const cycleCountryStatus = useCallback(async (countryCode: string, countryName: string) => {
-    if (!user) return
+  /** `filled` = user marked visited or lived via this action (hide fill callout). */
+  const cycleCountryStatus = useCallback(async (
+    countryCode: string,
+    countryName: string,
+  ): Promise<'filled' | 'cleared' | 'unchanged'> => {
+    if (!user) return 'unchanged'
     const existing = countries.find((c) => c.country_code === countryCode)
 
     if (!existing) {
@@ -129,26 +152,41 @@ function MapPageContent() {
         .insert({ user_id: user.id, country_code: countryCode, country_name: countryName, continent, status: 'visited' })
         .select()
         .single()
-      if (data) setCountries((prev) => [...prev, data])
-    } else if (existing.status === 'visited') {
+      if (data) {
+        setCountries((prev) => [...prev, data])
+        return 'filled'
+      }
+      return 'unchanged'
+    }
+    if (existing.status === 'visited') {
       const { data } = await supabase
         .from('countries')
         .update({ status: 'lived' })
         .eq('id', existing.id)
         .select()
         .single()
-      if (data) setCountries((prev) => prev.map((c) => (c.id === existing.id ? data : c)))
-    } else {
-      await supabase.from('countries').delete().eq('id', existing.id)
-      setCountries((prev) => prev.filter((c) => c.id !== existing.id))
+      if (data) {
+        setCountries((prev) => prev.map((c) => (c.id === existing.id ? data : c)))
+        return 'filled'
+      }
+      return 'unchanged'
     }
+    await supabase.from('countries').delete().eq('id', existing.id)
+    setCountries((prev) => prev.filter((c) => c.id !== existing.id))
+    return 'cleared'
   }, [countries, user])
 
   // ── Map click handlers ────────────────────────────────────────────────────
 
   const handleCountryClick = useCallback((countryCode: string, countryName: string) => {
     if (mode === 'fill') {
-      cycleCountryStatus(countryCode, countryName)
+      void (async () => {
+        const outcome = await cycleCountryStatus(countryCode, countryName)
+        if (outcome === 'filled' && fillCalloutAckKey) {
+          localStorage.setItem(fillCalloutAckKey, 'true')
+          setFillCalloutHidden(true)
+        }
+      })()
     } else {
       setSelectedDestination(null)
       setFriendLocationPreview(null)
@@ -157,7 +195,7 @@ function MapPageContent() {
       setSelectedCountryCode(countryCode)
       setSelectedCountryName(countryName)
     }
-  }, [mode, cycleCountryStatus])
+  }, [mode, cycleCountryStatus, fillCalloutAckKey])
 
   const handleDestinationClick = useCallback((dest: Destination) => {
     setSelectedCountryCode(null)
@@ -349,7 +387,8 @@ function MapPageContent() {
     )
   }
 
-  const showOnboardingCallout = mode === 'fill' && mapTourSeen === true
+  const showOnboardingCallout =
+    mode === 'fill' && fillCalloutHidden === false
   const nextUpCount = destinations.filter((d) => d.next_up).length
 
   return (
