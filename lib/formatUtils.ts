@@ -61,3 +61,12 @@ export function formatVisitDate(visit: {
     : `${year_end}`
   return `${startStr}–${endStr}`
 }
+
+/** For compact list subtext, e.g. "May, 2025" or "2025" when month is unknown. */
+export function formatMonthYearComma(year?: number, month?: number): string {
+  if (year == null) return ''
+  if (month != null && month >= 1 && month <= 12) {
+    return `${monthName(month)}, ${year}`
+  }
+  return `${year}`
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Destination, PlaceNote, Visit, FriendPlaceNote } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { mapFriendNoteRpcRow } from '@/lib/friendNotes'
-import { getPinState } from '@/lib/mapUtils'
+import { getPinState, sortVisitsReverseChronological } from '@/lib/mapUtils'
 import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
 import { useUser } from '@/lib/UserContext'
 import PlaceNoteInput from '@/components/PlaceNoteInput'
@@ -31,18 +31,6 @@ interface SidebarProps {
   nextUpCount: number
 }
 
-/** Most recent year_start first; missing year_start at the end. */
-function sortVisitsByYearStartDesc(visits: Visit[]): Visit[] {
-  return [...visits].sort((a, b) => {
-    const ya = a.year_start ?? null
-    const yb = b.year_start ?? null
-    if (ya == null && yb == null) return 0
-    if (ya == null) return 1
-    if (yb == null) return -1
-    return yb - ya
-  })
-}
-
 export default function Sidebar({
   destination,
   friendPreview,
@@ -57,7 +45,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const { user } = useUser()
   const [visits, setVisits] = useState<Visit[]>(() =>
-    sortVisitsByYearStartDesc(destination?.visits ?? [])
+    sortVisitsReverseChronological(destination?.visits ?? [])
   )
   const [placeNotes, setPlaceNotes] = useState<PlaceNote[]>([])
   const [friendNotes, setFriendNotes] = useState<FriendPlaceNote[]>([])
@@ -67,7 +55,7 @@ export default function Sidebar({
   const [showAddPlace, setShowAddPlace] = useState(false)
 
   useEffect(() => {
-    setVisits(sortVisitsByYearStartDesc(destination?.visits ?? []))
+    setVisits(sortVisitsReverseChronological(destination?.visits ?? []))
   }, [destination])
 
   useEffect(() => {
@@ -235,7 +223,7 @@ export default function Sidebar({
 
   function handleVisitChange(updated: Visit) {
     if (!destination) return
-    const newVisits = sortVisitsByYearStartDesc(
+    const newVisits = sortVisitsReverseChronological(
       visits.map((v) => (v.id === updated.id ? updated : v))
     )
     setVisits(newVisits)
@@ -244,14 +232,14 @@ export default function Sidebar({
 
   function handleVisitDelete(visitId: string) {
     if (!destination) return
-    const newVisits = sortVisitsByYearStartDesc(visits.filter((v) => v.id !== visitId))
+    const newVisits = sortVisitsReverseChronological(visits.filter((v) => v.id !== visitId))
     setVisits(newVisits)
     onDestinationUpdate({ ...destination, visits: newVisits })
   }
 
   function handleAddVisitSave(visit: Visit) {
     if (!destination) return
-    const newVisits = sortVisitsByYearStartDesc([...visits, visit])
+    const newVisits = sortVisitsReverseChronological([...visits, visit])
     setVisits(newVisits)
     onDestinationUpdate({ ...destination, visits: newVisits })
     setShowAddVisit(false)

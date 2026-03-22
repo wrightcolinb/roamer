@@ -10,7 +10,7 @@ import {
   type FriendCountryActivityRow,
 } from '@/lib/friendCountryGroups'
 import { getContinentFromCode } from '@/lib/countryUtils'
-import { formatPinStateLabel } from '@/lib/mapUtils'
+import { formatPinStateLabel, getCountryPanelDestinationLines } from '@/lib/mapUtils'
 import { useUser } from '@/lib/UserContext'
 import FriendCountryLocationGroup from '@/components/FriendCountryLocationGroup'
 import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
@@ -174,19 +174,25 @@ export default function CountryPanel({
             <p className="text-sm text-gray-400">No destinations added yet</p>
           ) : (
             <div className="space-y-2">
-              {countryDests.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => onDestinationClick(d)}
-                  className="w-full text-left px-3 py-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <p className="text-sm font-medium text-gray-700">{d.name}</p>
-                  <p className="text-xs text-gray-400 capitalize">
-                    {formatPinStateLabel(d)}
-                    {d.visits[0]?.year_start ? ` · ${d.visits[0].year_start}` : ''}
-                  </p>
-                </button>
-              ))}
+              {countryDests.map((d) => {
+                const { livedLine, visitedLine, nextUpLine } = getCountryPanelDestinationLines(d)
+                const lines = [livedLine, visitedLine, nextUpLine].filter(Boolean) as string[]
+                if (lines.length === 0) lines.push(formatPinStateLabel(d))
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => onDestinationClick(d)}
+                    className="w-full text-left px-3 py-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <p className="text-sm font-medium text-gray-700">{d.name}</p>
+                    <div className="text-xs text-gray-400 space-y-0.5">
+                      {lines.map((line, i) => (
+                        <p key={`${d.id}-sub-${i}`}>{line}</p>
+                      ))}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           )}
 
