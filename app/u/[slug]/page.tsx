@@ -5,6 +5,8 @@ import { UserContextProvider, useUser } from '@/lib/UserContext'
 import Map, { MapHandle } from '@/components/Map'
 import ModeToggle from '@/components/ModeToggle'
 import OnboardingCallout from '@/components/OnboardingCallout'
+import OnboardingTourModal from '@/components/OnboardingTourModal'
+import MapHelpButton from '@/components/MapHelpButton'
 import SearchBar, { PlaceSelection } from '@/components/SearchBar'
 import AddDestinationModal from '@/components/AddDestinationModal'
 import Sidebar from '@/components/Sidebar'
@@ -37,7 +39,9 @@ function MapPageContent() {
   const [mode, setMode] = useState<MapMode>('fill')
   const [countries, setCountries] = useState<Country[]>([])
   const [destinations, setDestinations] = useState<Destination[]>([])
-  const [onboardingDismissed, setOnboardingDismissed] = useState(true)
+  /** null until we read localStorage — avoids flashing the tour before we know */
+  const [mapTourSeen, setMapTourSeen] = useState<boolean | null>(null)
+  const [tourModalOpen, setTourModalOpen] = useState(false)
 
   const [selectedPlace, setSelectedPlace] = useState<PlaceSelection | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -51,15 +55,14 @@ function MapPageContent() {
   const mapRef = useRef<MapHandle>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Onboarding key is namespaced per user so two users on the same device
-  // each get their own first-run experience.
-  const onboardingKey = user ? `roamer_onboarding_${user.id}` : null
+  const onboardingSeenKey = user ? `roamer_onboarding_seen_${user.slug}` : null
 
   useEffect(() => {
-    if (!onboardingKey) return
-    const dismissed = localStorage.getItem(onboardingKey) === 'true'
-    setOnboardingDismissed(dismissed)
-  }, [onboardingKey])
+    if (!onboardingSeenKey) return
+    const seen = localStorage.getItem(onboardingSeenKey) === 'true'
+    setMapTourSeen(seen)
+    if (!seen) setTourModalOpen(true)
+  }, [onboardingSeenKey])
 
   useEffect(() => {
     if (!user) return
@@ -85,16 +88,29 @@ function MapPageContent() {
   }, [user])
 
   const handleToggle = useCallback(() => {
-    setMode((prev) => {
-      const next = prev === 'fill' ? 'explore' : 'fill'
-      if (prev === 'fill' && !onboardingDismissed && onboardingKey) {
-        setOnboardingDismissed(true)
-        localStorage.setItem(onboardingKey, 'true')
-      }
-      return next
-    })
+    setMode((prev) => (prev === 'fill' ? 'explore' : 'fill'))
     closePanels()
-  }, [onboardingDismissed, onboardingKey])
+  }, [])
+
+  // Exit fill mode with Escape key
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && mode === 'fill') {
+        setMode('explore')
+        closePanels()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode])
+
+  const dismissTourModal = useCallback(() => {
+    setTourModalOpen(false)
+    if (onboardingSeenKey && localStorage.getItem(onboardingSeenKey) !== 'true') {
+      localStorage.setItem(onboardingSeenKey, 'true')
+      setMapTourSeen(true)
+    }
+  }, [onboardingSeenKey])
 
   // ── Fill-mode country cycling ─────────────────────────────────────────────
 
@@ -289,7 +305,7 @@ function MapPageContent() {
     )
   }
 
-  const showOnboarding = mode === 'fill' && !onboardingDismissed
+  const showOnboardingCallout = mode === 'fill' && mapTourSeen === true
   const nextUpCount = destinations.filter((d) => d.next_up).length
 
   return (
@@ -345,7 +361,9 @@ function MapPageContent() {
           style={{ boxShadow: 'inset 0 0 0 4px #E8735A, inset 0 0 80px rgba(232, 115, 90, 0.3)' }}
         />
       )}
-      <OnboardingCallout visible={showOnboarding} />
+      <OnboardingTourModal open={tourModalOpen} onClose={dismissTourModal} />
+      <MapHelpButton onClick={() => setTourModalOpen(true)} />
+      <OnboardingCallout visible={showOnboardingCallout} />
       <ModeToggle mode={mode} onToggle={handleToggle} />
     </main>
   )
