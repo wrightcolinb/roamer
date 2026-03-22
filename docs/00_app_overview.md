@@ -12,44 +12,50 @@ Your relationship with a place isn't a status — it's a history. You might have
 ## The Shareable Visual
 The map is designed to be exported and shared — a single image that shows your entire travel history at a glance, with a stat block (countries visited, continents, years traveling). This is the acquisition mechanic. Someone sees your map, wants one of their own.
 
-## The Friend Layer (Phase 3)
-When you're planning a trip to somewhere you haven't been, the most useful information comes from friends who have. Tap a destination on your map and see notes from friends who've been there — what they loved, where they stayed, what they'd skip. Recency matters: a friend's 2024 notes beat their 2015 notes.
-
-## The AI Layer (Phase 3)
-A voice-first AI companion that populates your map through conversation. Tell it about your travels — where you've been, what you loved, what you'd do differently — and watch pins drop in real time. The AI captures structured notes from free-flowing conversation, identifies specific places you mention (restaurants, museums, neighborhoods), and builds a rich travel profile over time that makes it an increasingly useful planning partner.
-
 ## Data Model
 A destination is a place. Your relationship to it is captured in separate records:
 
-**Destination** — the place itself
-- name, coordinates, place_id — geography only
+**Users** — one row per Roamer user
+- slug (URL-safe, e.g. `colin` → `/u/colin`), display_name
+- email and auth_id reserved for Phase 2 auth upgrade, unused in Phase 1
 
-**Visit** — a past chapter at a destination
+**Countries** — countries the user has visited or lived in
+- country_code, country_name, continent, status (visited | lived)
+- Status only ever promotes (nothing → visited → lived), never auto-demotes
+- Driven by visit records and manual map clicks
+
+**Destinations** — specific places (cities, neighborhoods, country centroids)
+- name, coordinates, place_id — geography + ownership
+- next_up boolean flag + optional next_up_year — represents future intent
+- A destination can be both next_up and have visit history (planning a return trip)
+
+**Visits** — past chapters at a destination
 - type: visited | lived
-- year or date range (approximate is fine)
-- notes (freetext, eventually parsed for sub-places)
+- year_start, month_start, year_end, month_end (approximate is fine)
+- notes: freetext personal context for this specific trip
+- A destination can have multiple visits (visited 2008, lived 2012–2014, visited 2019)
 
-**Intent** — a future chapter at a destination
-- state: on my list | planning
-- optional target date
-- can coexist with visit history (planning a return trip)
+**Place Notes** — sentiment items about specific places within a destination
+- sentiment: recommend | meh | skip
+- place_name + optional Google Places ID
+- optional short text note
+- category_emoji auto-assigned, user-overridable
 
-A destination gets one pin on the map. The pin's visual treatment reflects the richest state across all visits and intents.
+A destination gets one pin on the map. The pin's visual treatment is derived from its visit history and next_up flag — never stored directly.
 
 ## Pin Visual System
-Distinct shapes per state — not just colors:
+Pin state is derived, not stored. Priority: lived > visited > next_up.
 
-| State | Pin style |
-|---|---|
-| Visited | Filled circle |
-| Lived | House shape |
-| On my list | Outlined star |
-| Planning | Filled star |
+| Derived State | Shape | Color |
+|---|---|---|
+| Visited | Filled circle | Coral / warm red |
+| Lived | House shape | Deep green |
+| Up Next | Filled star | Bright purple |
 
-A destination with both visit history and future intent shows the visit state as the primary pin style, with a secondary indicator for the intent.
+A destination with both visit history and next_up = true shows the visit-derived pin as primary, with a small purple dot overlay indicating it is also Up Next. Up Next destinations are capped at 5.
 
 ## Map Visual Style
-Illustrated, colorful, warm. Continent fills in distinct regional colors. Not a dark political map — closer to a travel poster. Flat 2D Mercator projection. Designed to be beautiful enough to export and share.
+Illustrated, colorful, warm. Visited countries filled in coral, lived-in countries in deep green. Not a dark political map — closer to a travel poster. Flat 2D Mercator projection. Designed to be beautiful enough to export and share.
 
 ## Build Philosophy
 - Responsive web app, mobile-friendly
@@ -60,8 +66,8 @@ Illustrated, colorful, warm. Continent fills in distinct regional colors. Not a 
 - All architecture decisions made with the AI layer in mind, even before it's built
 
 ## Tech Stack
-- **Frontend:** Next.js (React, TypeScript)
-- **Database:** Supabase (Postgres)
+- **Frontend:** Next.js 14 (App Router, TypeScript)
+- **Database:** Supabase (Postgres, no auth in Phase 1)
 - **Map:** Mapbox GL JS via react-map-gl
 - **Places:** Google Places API
 - **Hosting:** Vercel
@@ -69,14 +75,11 @@ Illustrated, colorful, warm. Continent fills in distinct regional colors. Not a 
 
 ## Phased Roadmap
 
-**Phase 1 — The map and your history**
-Log where you've been and where you want to go. Get the visual right. Build the shareable image. Validate with a small group of friends.
+**Phase 1 — The map, your history, and a placeholder friends layer**
+Log where you've been and where you want to go. Get the visual right. Build the shareable image. Multi-user support via URL slugs (no login). Placeholder "Friends who've been here" sections in the UI — data model ready, social features not yet wired. Validate with a small group of friends.
 
-**Phase 2 — The AI conversation layer**
-Voice-first AI that populates your map through conversation. Pins drop in real time as you talk. Notes captured and structured automatically.
+**Phase 2 — Auth and profile**
+Add real authentication (Google SSO or similar). Connect the existing `auth_id` and `email` fields on the users table. User profile page. Enable Row Level Security in Supabase. Activate the friends layer using the existing data model.
 
-**Phase 3 — Friends and planning**
-Surface friend notes when you're planning a trip. Deep planning tools for active trips (itinerary help, recommendations). Travel DNA profile built from your full history.
-
-**Phase 4 — AI suggestions**
-Destinations you'd probably love, surfaced based on your travel history and style. A separate visual layer on the map — distinct from your own pins.
+**Phase 3 — The AI conversation layer**
+Voice-first AI companion that populates your map through conversation. Pins drop in real time as you talk. Notes captured and structured automatically. Builds a rich travel profile over time that makes it an increasingly useful planning partner.

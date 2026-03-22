@@ -299,7 +299,7 @@ function MapPageContent() {
 
   if (!user) {
     return (
-      <main className="h-screen w-screen flex items-center justify-center bg-[#F5F0E8]">
+      <main className="h-[100dvh] w-screen flex items-center justify-center bg-[#F5F0E8]">
         <p className="text-gray-500 text-sm">User not found.</p>
       </main>
     )
@@ -309,7 +309,7 @@ function MapPageContent() {
   const nextUpCount = destinations.filter((d) => d.next_up).length
 
   return (
-    <main className="h-screen w-screen relative">
+    <main className="h-[100dvh] w-screen relative">
       <div ref={mapContainerRef} className="absolute inset-0">
         <Map
           ref={mapRef}
@@ -320,7 +320,7 @@ function MapPageContent() {
           onDestinationClick={handleDestinationClick}
           onBackgroundClick={handleBackgroundClick}
         />
-        <StatBlock countries={countries} destinations={destinations} />
+        <StatBlock countries={countries} destinations={destinations} displayName={user.display_name} />
       </div>
       <SearchBar onPlaceSelected={handlePlaceSelected} />
       <AddDestinationModal
@@ -357,8 +357,11 @@ function MapPageContent() {
       />
       {mode === 'fill' && (
         <div
-          className="fixed inset-0 z-50 pointer-events-none"
-          style={{ boxShadow: 'inset 0 0 0 4px #E8735A, inset 0 0 80px rgba(232, 115, 90, 0.3)' }}
+          className="fixed inset-0 z-50 pointer-events-none md:rounded-none"
+          style={{
+            borderRadius: 'max(12px, calc(env(safe-area-inset-top) * 0.4))',
+            boxShadow: 'inset 0 0 0 4px #E8735A, inset 0 0 80px rgba(232, 115, 90, 0.3)',
+          }}
         />
       )}
       <OnboardingTourModal open={tourModalOpen} onClose={dismissTourModal} />

@@ -5,6 +5,7 @@ import { Country, Destination } from '@/lib/types'
 interface StatBlockProps {
   countries: Country[]
   destinations: Destination[]
+  displayName: string
 }
 
 function nextUpDestinationDisplayName({ name, country_name }: Destination): string {
@@ -14,7 +15,7 @@ function nextUpDestinationDisplayName({ name, country_name }: Destination): stri
   return `${name}, ${country}`
 }
 
-export default function StatBlock({ countries, destinations }: StatBlockProps) {
+export default function StatBlock({ countries, destinations, displayName }: StatBlockProps) {
   const totalCountries = countries.length
   const countriesLived = countries.filter((c) => c.status === 'lived').length
 
@@ -49,7 +50,7 @@ export default function StatBlock({ countries, destinations }: StatBlockProps) {
           className="flex justify-between items-center gap-2 min-h-[36px] cursor-pointer"
         >
           <span className="text-sm font-medium md:text-base" style={{ color: '#2c2c2a' }}>
-            Colin&apos;s travels
+            {displayName}&apos;s travels
           </span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b4b2a9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <polyline points="9 18 15 12 9 6" />
