@@ -166,7 +166,7 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
   return (
     <div
       ref={containerRef}
-      className="fixed top-4 left-4 right-[60px] md:right-auto md:w-96 z-10"
+      className="fixed top-[calc(1rem+env(safe-area-inset-top))] left-4 right-[60px] md:right-auto md:w-96 z-10"
     >
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2">
