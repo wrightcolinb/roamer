@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { PlaceNote, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
-import { getCategoryEmoji } from '@/lib/mapUtils'
+import { getPlaceCategoryId } from '@/lib/placeCategory'
 import { useUser } from '@/lib/UserContext'
 
 interface PlaceNoteInputProps {
@@ -107,7 +107,7 @@ export default function PlaceNoteInput({
     setSaving(true)
 
     const trimmedName = placeName.trim()
-    const categoryEmoji = getCategoryEmoji(trimmedName)
+    const categoryId = getPlaceCategoryId(trimmedName)
 
     const { data } = await supabase
       .from('place_notes')
@@ -117,7 +117,7 @@ export default function PlaceNoteInput({
         place_name: trimmedName,
         place_id: selectedPlaceId,
         sentiment: selectedSentiment,
-        category_emoji: categoryEmoji,
+        category_emoji: categoryId,
         note: note.trim(),
       })
       .select()

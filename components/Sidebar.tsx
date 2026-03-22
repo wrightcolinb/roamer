@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Destination, PlaceNote, Visit, FriendPlaceNote } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { mapFriendNoteRpcRow } from '@/lib/friendNotes'
@@ -50,7 +50,9 @@ export default function Sidebar({
   const [placeNotes, setPlaceNotes] = useState<PlaceNote[]>([])
   const [friendNotes, setFriendNotes] = useState<FriendPlaceNote[]>([])
   const [friendNotesLoading, setFriendNotesLoading] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const [deleteConfirmInMenu, setDeleteConfirmInMenu] = useState(false)
+  const overflowRef = useRef<HTMLDivElement>(null)
   const [showAddVisit, setShowAddVisit] = useState(false)
   const [showAddPlace, setShowAddPlace] = useState(false)
 
@@ -59,10 +61,32 @@ export default function Sidebar({
   }, [destination])
 
   useEffect(() => {
-    setConfirmDelete(false)
+    setOverflowOpen(false)
+    setDeleteConfirmInMenu(false)
     setShowAddVisit(false)
     setShowAddPlace(false)
   }, [destination?.id, friendPreview?.groupKey])
+
+  useEffect(() => {
+    if (!overflowOpen) setDeleteConfirmInMenu(false)
+  }, [overflowOpen])
+
+  useEffect(() => {
+    if (!overflowOpen) return
+    function handlePointerDown(e: MouseEvent) {
+      if (overflowRef.current?.contains(e.target as Node)) return
+      setOverflowOpen(false)
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOverflowOpen(false)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [overflowOpen])
 
   useEffect(() => {
     if (!initialExpandAddVisit && !initialExpandAddPlace) return
@@ -280,7 +304,7 @@ export default function Sidebar({
 
   const friendsSection = (
     <div className="mt-6 pt-5 border-t border-gray-100">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+      <p className="text-[11px] font-medium text-gray-300 mb-3">
         Friends who&rsquo;ve been here
       </p>
 
@@ -300,7 +324,7 @@ export default function Sidebar({
 
   const historySection = (
     <div className="mt-6">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">History</p>
+      <p className="text-[11px] font-medium text-gray-300 mb-3">History</p>
 
       {visits.length === 0 && (
         <p className="text-sm text-gray-400 italic">No visits logged yet.</p>
@@ -337,7 +361,7 @@ export default function Sidebar({
 
   const placesSection = (
     <div className="mt-6">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Places</p>
+      <p className="text-[11px] font-medium text-gray-300 mb-3">Places</p>
 
       {placeNotes.length === 0 && !showAddPlace && (
         <p className="text-sm text-gray-400 italic">No places noted yet.</p>
@@ -378,20 +402,89 @@ export default function Sidebar({
       <div className="fixed inset-0 z-30" onClick={onClose} />
 
       <aside className="fixed z-40 bg-white shadow-2xl overflow-y-auto bottom-0 left-0 right-0 h-[70dvh] rounded-t-2xl animate-slide-up md:top-0 md:right-0 md:left-auto md:bottom-auto md:h-full md:w-full md:max-w-md md:rounded-t-none md:rounded-l-2xl md:animate-slide-right">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 text-xl"
-        >
-          ×
-        </button>
+        <div className="absolute top-4 right-4 flex items-center gap-0.5">
+          {showDeleteControls && (
+            <div ref={overflowRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setOverflowOpen((o) => !o)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                aria-expanded={overflowOpen}
+                aria-haspopup="menu"
+                aria-label="Destination options"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={20}
+                  height={20}
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <circle cx={12} cy={5} r={2} />
+                  <circle cx={12} cy={12} r={2} />
+                  <circle cx={12} cy={19} r={2} />
+                </svg>
+              </button>
+              {overflowOpen && (
+                <div
+                  className="absolute right-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-gray-100 bg-white py-1 shadow-lg"
+                  role="menu"
+                >
+                  {!deleteConfirmInMenu ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => setDeleteConfirmInMenu(true)}
+                      className="flex w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Delete destination
+                    </button>
+                  ) : (
+                    <div className="px-3 py-2">
+                      <p className="text-xs text-gray-500 leading-snug mb-3">
+                        Permanently remove this destination? This cannot be undone.
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteDestination()}
+                          className="w-full rounded-md bg-red-500 py-2 text-sm text-white hover:bg-red-600 transition-colors"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmInMenu(false)}
+                          className="w-full rounded-md border border-gray-200 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 text-xl transition-colors"
+            aria-label="Close sidebar"
+          >
+            ×
+          </button>
+        </div>
 
         <div className="p-6 pt-8">
-          <h2 className="text-xl font-semibold text-gray-800 pr-8">
+          <h2
+            className={`text-2xl font-bold tracking-tight text-gray-900 ${showDeleteControls ? 'pr-20' : 'pr-8'}`}
+          >
             {title}
           </h2>
           {subtitleCountry && subtitleCountry !== title && (
-            <p className="text-sm text-gray-500 mt-1">{subtitleCountry}</p>
+            <p className="mt-1.5 text-xs font-normal text-gray-400">{subtitleCountry}</p>
           )}
 
           {friendPreview && (
@@ -400,12 +493,13 @@ export default function Sidebar({
             </p>
           )}
 
-          <div className="mt-4 flex items-center gap-3 pb-5">
-            <div className="relative">
+          <div className="mt-4 flex items-center gap-2 pb-5">
+            <div className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => void handleNextUpToggle()}
                 disabled={nextUpDisabled}
+                aria-describedby="next-up-slots-meta"
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                   nextUpActive ? 'bg-[#7C3AED]' : 'bg-gray-200'
                 } disabled:cursor-not-allowed disabled:opacity-60`}
@@ -416,7 +510,12 @@ export default function Sidebar({
                   }`}
                 />
               </button>
-              <span className="absolute top-full left-0 right-0 mt-1 text-xs text-gray-400 text-center whitespace-nowrap">{nextUpCount} of 5 used</span>
+              <span
+                id="next-up-slots-meta"
+                className="absolute top-full left-1/2 mt-1 -translate-x-1/2 text-[11px] tabular-nums text-gray-400 whitespace-nowrap text-center"
+              >
+                {nextUpCount}/5
+              </span>
             </div>
             <span className="text-sm text-gray-600">Next up</span>
             {destination?.next_up && (
@@ -444,37 +543,6 @@ export default function Sidebar({
               {placesSection}
               {friendsSection}
             </>
-          )}
-
-          <hr className="my-6 border-gray-100" />
-
-          {showDeleteControls && (
-            confirmDelete ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteDestination()}
-                  className="flex-1 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  Confirm delete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="flex-1 py-2 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                className="w-full py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                Delete destination
-              </button>
-            )
           )}
         </div>
       </aside>

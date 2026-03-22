@@ -23,6 +23,6 @@ export function mapFriendNoteRpcRow(row: {
     author_id: row.author_id ?? row.display_name,
     destination_name: row.destination_name ?? undefined,
     created_at: row.created_at ?? undefined,
-    category_emoji: row.category_emoji?.trim() || '📍',
+    category_emoji: row.category_emoji?.trim() || 'pin',
   }
 }

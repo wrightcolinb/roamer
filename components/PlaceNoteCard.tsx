@@ -3,7 +3,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { PlaceNote, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
-import { SENTIMENT_QUOTE_COLORS, CATEGORY_EMOJI_OPTIONS } from '@/lib/mapUtils'
+import { SENTIMENT_QUOTE_COLORS } from '@/lib/mapUtils'
+import {
+  PLACE_CATEGORY_PICKER_IDS,
+  normalizePlaceCategoryStored,
+  type PlaceCategoryId,
+} from '@/lib/placeCategory'
+import { PlaceCategoryIcon } from '@/lib/placeCategoryIcon'
 
 interface PlaceNoteCardProps {
   note: PlaceNote
@@ -59,11 +65,11 @@ export default function PlaceNoteCard({ note, onChange, onDelete }: PlaceNoteCar
     onDelete(note.id)
   }
 
-  async function handleEmojiPick(emoji: string) {
+  async function handleCategoryPick(id: PlaceCategoryId) {
     setPickerOpen(false)
     const { data } = await supabase
       .from('place_notes')
-      .update({ category_emoji: emoji })
+      .update({ category_emoji: id })
       .eq('id', note.id)
       .select()
       .single()
@@ -76,27 +82,32 @@ export default function PlaceNoteCard({ note, onChange, onDelete }: PlaceNoteCar
   if (!editing) {
     return (
       <div className="flex items-start gap-2.5 py-2 group">
-        {/* Category emoji — tappable */}
-        <div className="relative shrink-0 w-[16px]" ref={pickerRef}>
+        {/* Category icon — tappable */}
+        <div className="relative shrink-0 w-4" ref={pickerRef}>
           <button
+            type="button"
             onClick={() => setPickerOpen((p) => !p)}
-            className="text-base leading-none mt-0.5 hover:scale-110 transition-transform cursor-pointer"
+            className="flex h-4 w-4 items-center justify-center rounded hover:opacity-80 transition-opacity cursor-pointer text-gray-400"
             aria-label="Change category"
           >
-            {note.category_emoji || '📍'}
+            <PlaceCategoryIcon category={note.category_emoji} size={16} className="text-gray-400" />
           </button>
 
           {pickerOpen && (
-            <div className="absolute top-7 left-0 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-2 grid grid-cols-4 gap-1 w-[160px]">
-              {CATEGORY_EMOJI_OPTIONS.map((e) => (
+            <div className="absolute top-8 left-0 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-2 grid grid-cols-4 gap-1 w-[168px]">
+              {PLACE_CATEGORY_PICKER_IDS.map((id) => (
                 <button
-                  key={e}
-                  onClick={() => handleEmojiPick(e)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-lg hover:bg-gray-100 transition-colors ${
-                    note.category_emoji === e ? 'bg-gray-100 ring-1 ring-gray-300' : ''
+                  key={id}
+                  type="button"
+                  onClick={() => void handleCategoryPick(id)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors ${
+                    normalizePlaceCategoryStored(note.category_emoji) === id
+                      ? 'bg-gray-100 ring-1 ring-gray-300'
+                      : ''
                   }`}
+                  aria-label={`Category ${id}`}
                 >
-                  {e}
+                  <PlaceCategoryIcon category={id} size={16} className="text-gray-400" />
                 </button>
               ))}
             </div>

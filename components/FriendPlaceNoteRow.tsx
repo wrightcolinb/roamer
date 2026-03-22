@@ -2,6 +2,7 @@
 
 import { FriendPlaceNote } from '@/lib/types'
 import { SENTIMENT_QUOTE_COLORS } from '@/lib/mapUtils'
+import { PlaceCategoryIcon } from '@/lib/placeCategoryIcon'
 
 function hashStringToHue(input: string): number {
   let hash = 0
@@ -55,8 +56,8 @@ export default function FriendPlaceNoteRow({ note }: FriendPlaceNoteRowProps) {
           )}
         </div>
         <p className="text-[14px] font-medium text-gray-800 leading-snug mt-1 flex gap-2 items-start">
-          <span className="text-base leading-none shrink-0 mt-0.5" aria-hidden>
-            {note.category_emoji || '📍'}
+          <span className="shrink-0 mt-0.5 flex h-4 w-4 items-center justify-center" aria-hidden>
+            <PlaceCategoryIcon category={note.category_emoji} size={16} className="text-gray-400" />
           </span>
           <span>{note.place_name}</span>
         </p>
