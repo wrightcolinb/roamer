@@ -174,6 +174,9 @@ export default function SearchBar({ onPlaceSelected }: SearchBarProps) {
         </div>
         <input
           type="text"
+          id="destination-search"
+          name="destination-search"
+          autoComplete="off"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
