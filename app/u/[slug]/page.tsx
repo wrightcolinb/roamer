@@ -15,6 +15,7 @@ import ExportButton from '@/components/ExportButton'
 import ExportModal from '@/components/ExportModal'
 import StatBlock from '@/components/StatBlock'
 import { MapMode, Country, Destination, Visit, VisitType } from '@/lib/types'
+import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
 import { supabase } from '@/lib/supabase'
 import { getContinentFromCode } from '@/lib/countryUtils'
 import { shouldPromoteCountry } from '@/lib/mapUtils'
@@ -47,6 +48,9 @@ function MapPageContent() {
   const [modalOpen, setModalOpen] = useState(false)
 
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null)
+  const [friendLocationPreview, setFriendLocationPreview] = useState<FriendLocationSidebarPreview | null>(null)
+  const [sidebarExpandAddVisit, setSidebarExpandAddVisit] = useState(false)
+  const [sidebarExpandAddPlace, setSidebarExpandAddPlace] = useState(false)
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null)
   const [selectedCountryName, setSelectedCountryName] = useState<string>('')
 
@@ -147,6 +151,9 @@ function MapPageContent() {
       cycleCountryStatus(countryCode, countryName)
     } else {
       setSelectedDestination(null)
+      setFriendLocationPreview(null)
+      setSidebarExpandAddVisit(false)
+      setSidebarExpandAddPlace(false)
       setSelectedCountryCode(countryCode)
       setSelectedCountryName(countryName)
     }
@@ -154,6 +161,9 @@ function MapPageContent() {
 
   const handleDestinationClick = useCallback((dest: Destination) => {
     setSelectedCountryCode(null)
+    setFriendLocationPreview(null)
+    setSidebarExpandAddVisit(false)
+    setSidebarExpandAddPlace(false)
     setSelectedDestination(dest)
   }, [])
 
@@ -163,6 +173,9 @@ function MapPageContent() {
 
   function closePanels() {
     setSelectedDestination(null)
+    setFriendLocationPreview(null)
+    setSidebarExpandAddVisit(false)
+    setSidebarExpandAddPlace(false)
     setSelectedCountryCode(null)
   }
 
@@ -194,7 +207,38 @@ function MapPageContent() {
 
   const handleDestinationClickFromPanel = useCallback((dest: Destination) => {
     setSelectedCountryCode(null)
+    setFriendLocationPreview(null)
+    setSidebarExpandAddVisit(false)
+    setSidebarExpandAddPlace(false)
     setSelectedDestination(dest)
+  }, [])
+
+  const handleFriendLocationPreviewOpen = useCallback((preview: FriendLocationSidebarPreview) => {
+    setSelectedCountryCode(null)
+    setFriendLocationPreview(preview)
+    setSelectedDestination(null)
+    setSidebarExpandAddVisit(false)
+    setSidebarExpandAddPlace(false)
+    const { lat, lng } = preview
+    if (Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)) {
+      mapRef.current?.flyTo(lat, lng)
+    }
+  }, [])
+
+  const handleFriendPreviewCommitted = useCallback((
+    dest: Destination,
+    opts?: { openAddVisit?: boolean; openAddPlace?: boolean }
+  ) => {
+    setDestinations((prev) => [...prev, dest])
+    setFriendLocationPreview(null)
+    setSelectedDestination(dest)
+    setSidebarExpandAddVisit(Boolean(opts?.openAddVisit))
+    setSidebarExpandAddPlace(Boolean(opts?.openAddPlace))
+  }, [])
+
+  const consumeSidebarExpand = useCallback(() => {
+    setSidebarExpandAddVisit(false)
+    setSidebarExpandAddPlace(false)
   }, [])
 
   // ── Search / Add Destination ──────────────────────────────────────────────
@@ -331,11 +375,21 @@ function MapPageContent() {
         nextUpCount={nextUpCount}
       />
       <Sidebar
-        key={selectedDestination?.id ?? 'none'}
+        key={selectedDestination?.id ?? friendLocationPreview?.groupKey ?? 'closed'}
         destination={selectedDestination}
-        onClose={() => setSelectedDestination(null)}
+        friendPreview={friendLocationPreview}
+        onClose={() => {
+          setSelectedDestination(null)
+          setFriendLocationPreview(null)
+          setSidebarExpandAddVisit(false)
+          setSidebarExpandAddPlace(false)
+        }}
         onDestinationUpdate={handleDestinationUpdate}
         onDestinationDelete={handleDestinationDelete}
+        onFriendPreviewCommitted={handleFriendPreviewCommitted}
+        initialExpandAddVisit={sidebarExpandAddVisit}
+        initialExpandAddPlace={sidebarExpandAddPlace}
+        onConsumedInitialExpand={consumeSidebarExpand}
         nextUpCount={nextUpCount}
       />
       <CountryPanel
@@ -347,6 +401,7 @@ function MapPageContent() {
         onCountryUpdate={handleCountryUpdateFromPanel}
         onCountryRemove={handleCountryRemoveFromPanel}
         onDestinationClick={handleDestinationClickFromPanel}
+        onFriendLocationPreview={handleFriendLocationPreviewOpen}
       />
       <ExportButton setExportModalOpen={setExportModalOpen} />
       <ExportModal

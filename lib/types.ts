@@ -5,7 +5,8 @@ export interface User {
 }
 
 export type VisitType = 'visited' | 'lived'
-export type PinState = 'visited' | 'lived' | 'next_up'
+/** `hidden` = on your map as a row but no visits and not Next Up — no pin is drawn (e.g. draft from friend explore). */
+export type PinState = 'visited' | 'lived' | 'next_up' | 'hidden'
 export type CountryStatus = 'visited' | 'lived'
 export type Sentiment = 'recommend' | 'meh' | 'skip'
 export type Continent = 'Africa' | 'Asia' | 'Europe' | 'North America' | 'South America' | 'Oceania' | 'Antarctica'
@@ -59,3 +60,18 @@ export interface PlaceNote {
   note: string
   created_at: string
 }
+
+/** Row from get_friend_notes / get_friend_notes_for_country RPCs (other users' notes). */
+export interface FriendPlaceNote {
+  id: string
+  place_name: string
+  note: string
+  sentiment: Sentiment
+  display_name: string
+  visit_year?: number
+  author_id: string
+  destination_name?: string
+  created_at?: string
+  category_emoji: string
+}
+

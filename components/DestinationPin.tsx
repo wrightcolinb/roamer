@@ -56,5 +56,7 @@ export default function DestinationPin({ destination }: DestinationPinProps) {
       return <LivedPin />
     case 'next_up':
       return <NextUpPin />
+    case 'hidden':
+      return null
   }
 }

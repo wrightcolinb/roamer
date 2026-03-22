@@ -7,7 +7,15 @@ import { CountryStatus, Destination, PinState, Sentiment, VisitType } from '@/li
 export function getPinState(destination: Destination): PinState {
   if (destination.visits.some((v) => v.type === 'lived')) return 'lived'
   if (destination.visits.length > 0) return 'visited'
-  return 'next_up'
+  if (destination.next_up) return 'next_up'
+  return 'hidden'
+}
+
+/** Short label for lists (country panel, etc.). */
+export function formatPinStateLabel(destination: Destination): string {
+  const s = getPinState(destination)
+  if (s === 'hidden') return 'No pin yet'
+  return s.replace('_', ' ')
 }
 
 /**

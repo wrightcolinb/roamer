@@ -1,15 +1,10 @@
--- Run in the Supabase SQL editor.
--- Called from Sidebar.tsx via supabase.rpc('get_friend_notes', { ... })
---
--- If you change the RETURNS TABLE columns, Postgres requires dropping the old
--- function first (CREATE OR REPLACE cannot change the row type).
+-- Run in Supabase SQL editor after get_friend_notes.sql.
+-- Aggregates other users' place notes for all destinations in a country.
 
-drop function if exists get_friend_notes(uuid, text, text, text);
+drop function if exists get_friend_notes_for_country(uuid, text);
 
-create or replace function get_friend_notes(
-  p_user_id     uuid,
-  p_place_id    text,
-  p_name        text,
+create or replace function get_friend_notes_for_country(
+  p_user_id      uuid,
   p_country_code text
 )
 returns table (
@@ -48,10 +43,8 @@ as $$
   where
     pn.user_id <> p_user_id
     and pn.note <> ''
-    and (
-      (p_place_id is not null and p_place_id <> '' and d.place_id = p_place_id)
-      or (p_country_code is not null and d.name = p_name and d.country_code = p_country_code)
-    )
+    and p_country_code is not null
+    and d.country_code = p_country_code
   order by
     case pn.sentiment
       when 'recommend' then 1

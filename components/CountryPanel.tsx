@@ -1,10 +1,19 @@
 'use client'
 
+import { useState, useEffect, useMemo } from 'react'
 import { Country, Destination, CountryStatus } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
+import {
+  buildFriendLocationGroups,
+  mapFriendCountryActivityRow,
+  resolveViewerDestinationForFriendGroup,
+  type FriendCountryActivityRow,
+} from '@/lib/friendCountryGroups'
 import { getContinentFromCode } from '@/lib/countryUtils'
-import { getPinState } from '@/lib/mapUtils'
+import { formatPinStateLabel } from '@/lib/mapUtils'
 import { useUser } from '@/lib/UserContext'
+import FriendCountryLocationGroup from '@/components/FriendCountryLocationGroup'
+import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
 
 interface CountryPanelProps {
   countryCode: string | null
@@ -15,6 +24,7 @@ interface CountryPanelProps {
   onCountryUpdate: (country: Country) => void
   onCountryRemove: (countryId: string) => void
   onDestinationClick: (dest: Destination) => void
+  onFriendLocationPreview: (preview: FriendLocationSidebarPreview) => void
 }
 
 const STATUS_OPTIONS: { value: CountryStatus | 'remove'; label: string; color: string }[] = [
@@ -32,8 +42,47 @@ export default function CountryPanel({
   onCountryUpdate,
   onCountryRemove,
   onDestinationClick,
+  onFriendLocationPreview,
 }: CountryPanelProps) {
   const { user } = useUser()
+  const [friendActivityLoading, setFriendActivityLoading] = useState(false)
+  const [friendActivityRows, setFriendActivityRows] = useState<FriendCountryActivityRow[]>([])
+
+  useEffect(() => {
+    if (!countryCode || !user) return
+    let cancelled = false
+
+    async function loadFriendActivity() {
+      setFriendActivityLoading(true)
+      try {
+        const { data } = await supabase.rpc('get_friend_country_activity', {
+          p_user_id: user!.id,
+          p_country_code: countryCode,
+        })
+
+        if (cancelled) return
+
+        if (!data?.length) {
+          setFriendActivityRows([])
+          return
+        }
+
+        setFriendActivityRows(data.map(mapFriendCountryActivityRow))
+      } finally {
+        if (!cancelled) setFriendActivityLoading(false)
+      }
+    }
+
+    setFriendActivityRows([])
+    loadFriendActivity()
+    return () => { cancelled = true }
+  }, [countryCode, user])
+
+  // Must run before any early return — same hook order when countryCode is null vs set.
+  const friendLocationGroups = useMemo(
+    () => buildFriendLocationGroups(friendActivityRows),
+    [friendActivityRows]
+  )
 
   if (!countryCode) return null
   const code = countryCode
@@ -133,7 +182,7 @@ export default function CountryPanel({
                 >
                   <p className="text-sm font-medium text-gray-700">{d.name}</p>
                   <p className="text-xs text-gray-400 capitalize">
-                    {getPinState(d).replace('_', ' ')}
+                    {formatPinStateLabel(d)}
                     {d.visits[0]?.year_start ? ` · ${d.visits[0].year_start}` : ''}
                   </p>
                 </button>
@@ -143,12 +192,29 @@ export default function CountryPanel({
 
           <hr className="my-6 border-gray-100" />
 
-          {/* Friends placeholder */}
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Friends who&apos;ve been here
-          </h3>
-          <div className="py-8 text-center">
-            <p className="text-sm text-gray-400">Coming soon</p>
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+              Friends who&apos;ve been here
+            </p>
+            {friendActivityLoading ? (
+              <p className="text-sm text-gray-400">Loading&hellip;</p>
+            ) : friendLocationGroups.length === 0 ? (
+              <p className="text-sm text-gray-400">
+                No friends in your network have shared trips here yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {friendLocationGroups.map((group) => (
+                  <FriendCountryLocationGroup
+                    key={group.key}
+                    group={group}
+                    matchedDestination={resolveViewerDestinationForFriendGroup(group, countryDests)}
+                    onOpenDestination={onDestinationClick}
+                    onOpenFriendPreview={onFriendLocationPreview}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </aside>

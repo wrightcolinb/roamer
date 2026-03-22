@@ -4,6 +4,7 @@ import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
 import MapGL, { Marker, MapLayerMouseEvent, MapRef } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapMode, Country, Destination } from '@/lib/types'
+import { getPinState } from '@/lib/mapUtils'
 import CountryLayer from '@/components/CountryLayer'
 import DestinationPin from '@/components/DestinationPin'
 
@@ -79,7 +80,9 @@ const Map = forwardRef<MapHandle, MapProps>(function Map(
       cursor={mode === 'fill' ? 'crosshair' : undefined}
     >
       <CountryLayer countries={countries} mode={mode} />
-      {destinations.map((dest) => (
+      {destinations
+        .filter((dest) => getPinState(dest) !== 'hidden')
+        .map((dest) => (
         <Marker
           key={dest.id}
           longitude={dest.lng}
