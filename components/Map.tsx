@@ -3,7 +3,7 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
 import MapGL, { Marker, MapLayerMouseEvent, MapRef } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapMode, Country, Destination } from '@/lib/types'
+import { MapMode, CountryFill, Destination } from '@/lib/types'
 import { getPinState } from '@/lib/mapUtils'
 import CountryLayer from '@/components/CountryLayer'
 import DestinationPin from '@/components/DestinationPin'
@@ -17,7 +17,7 @@ export interface MapHandle {
 
 interface MapProps {
   mode: MapMode
-  countries: Country[]
+  countries: CountryFill[]
   destinations: Destination[]
   onCountryClick?: (countryCode: string, countryName: string) => void
   onDestinationClick?: (destination: Destination) => void

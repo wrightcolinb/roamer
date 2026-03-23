@@ -36,7 +36,7 @@ as $$
       select 1 from visits v where v.destination_id = d.id
     )
     and not exists (
-      select 1 from place_notes pn
+      select 1 from places pn
       where pn.destination_id = d.id
         and pn.user_id = d.user_id
         and trim(coalesce(pn.note, '')) <> ''

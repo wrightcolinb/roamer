@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { PlaceNote, Sentiment } from '@/lib/types'
+import { Place, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { SENTIMENT_QUOTE_COLORS } from '@/lib/mapUtils'
 import {
@@ -12,8 +12,8 @@ import {
 import { PlaceCategoryIcon } from '@/lib/placeCategoryIcon'
 
 interface PlaceNoteCardProps {
-  note: PlaceNote
-  onChange: (updated: PlaceNote) => void
+  note: Place
+  onChange: (updated: Place) => void
   onDelete: (noteId: string) => void
 }
 
@@ -49,7 +49,7 @@ export default function PlaceNoteCard({ note, onChange, onDelete }: PlaceNoteCar
 
   async function handleSave() {
     const { data } = await supabase
-      .from('place_notes')
+      .from('places')
       .update({ sentiment: editSentiment, note: editNote })
       .eq('id', note.id)
       .select()
@@ -61,14 +61,14 @@ export default function PlaceNoteCard({ note, onChange, onDelete }: PlaceNoteCar
   }
 
   async function handleDelete() {
-    await supabase.from('place_notes').delete().eq('id', note.id)
+    await supabase.from('places').delete().eq('id', note.id)
     onDelete(note.id)
   }
 
   async function handleCategoryPick(id: PlaceCategoryId) {
     setPickerOpen(false)
     const { data } = await supabase
-      .from('place_notes')
+      .from('places')
       .update({ category_emoji: id })
       .eq('id', note.id)
       .select()

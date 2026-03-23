@@ -14,7 +14,7 @@ import CountryPanel from '@/components/CountryPanel'
 import ExportButton from '@/components/ExportButton'
 import ExportModal from '@/components/ExportModal'
 import StatBlock from '@/components/StatBlock'
-import { MapMode, Country, Destination, Visit, VisitType } from '@/lib/types'
+import { MapMode, CountryFill, Destination, Visit, VisitType } from '@/lib/types'
 import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
 import { supabase } from '@/lib/supabase'
 import { getContinentFromCode } from '@/lib/countryUtils'
@@ -38,7 +38,7 @@ function MapPageContent() {
   const { user, loading } = useUser()
 
   const [mode, setMode] = useState<MapMode>('fill')
-  const [countries, setCountries] = useState<Country[]>([])
+  const [countries, setCountries] = useState<CountryFill[]>([])
   const [destinations, setDestinations] = useState<Destination[]>([])
   /** false until countries fetch completes — tour/callout use real counts */
   const [countriesLoadDone, setCountriesLoadDone] = useState(false)
@@ -86,9 +86,9 @@ function MapPageContent() {
     countriesWereHydrated.current = false
     async function fetchData() {
       const [countriesRes, destinationsRes, visitsRes] = await Promise.all([
-        supabase.from('countries').select('*').eq('user_id', user!.id),
+        supabase.from('country_fills').select('*').eq('user_id', user!.id),
         supabase.from('destinations').select('*').eq('user_id', user!.id),
-        supabase.from('visits').select('*'),
+        supabase.from('visits').select('*').eq('user_id', user!.id),
       ])
 
       if (countriesRes.data) setCountries(countriesRes.data)
@@ -148,7 +148,7 @@ function MapPageContent() {
     if (!existing) {
       const continent = getContinentFromCode(countryCode)
       const { data } = await supabase
-        .from('countries')
+        .from('country_fills')
         .insert({ user_id: user.id, country_code: countryCode, country_name: countryName, continent, status: 'visited' })
         .select()
         .single()
@@ -160,7 +160,7 @@ function MapPageContent() {
     }
     if (existing.status === 'visited') {
       const { data } = await supabase
-        .from('countries')
+        .from('country_fills')
         .update({ status: 'lived' })
         .eq('id', existing.id)
         .select()
@@ -171,7 +171,7 @@ function MapPageContent() {
       }
       return 'unchanged'
     }
-    await supabase.from('countries').delete().eq('id', existing.id)
+    await supabase.from('country_fills').delete().eq('id', existing.id)
     setCountries((prev) => prev.filter((c) => c.id !== existing.id))
     return 'cleared'
   }, [countries, user])
@@ -231,7 +231,7 @@ function MapPageContent() {
 
   // ── CountryPanel callbacks ────────────────────────────────────────────────
 
-  const handleCountryUpdateFromPanel = useCallback((updated: Country) => {
+  const handleCountryUpdateFromPanel = useCallback((updated: CountryFill) => {
     setCountries((prev) => {
       const idx = prev.findIndex((c) => c.id === updated.id)
       if (idx >= 0) return prev.map((c) => (c.id === updated.id ? updated : c))
@@ -344,7 +344,7 @@ function MapPageContent() {
         if (newStatus) {
           if (existingCountry) {
             const { data } = await supabase
-              .from('countries')
+              .from('country_fills')
               .update({ status: newStatus })
               .eq('id', existingCountry.id)
               .select()
@@ -352,7 +352,7 @@ function MapPageContent() {
             if (data) setCountries((prev) => prev.map((c) => (c.id === existingCountry.id ? data : c)))
           } else {
             const { data } = await supabase
-              .from('countries')
+              .from('country_fills')
               .insert({
                 user_id: user.id,
                 country_code: selectedPlace.country_code,

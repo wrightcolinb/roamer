@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Destination, PlaceNote, Visit, FriendPlaceNote } from '@/lib/types'
+import { Destination, Place, Visit, FriendPlace } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { mapFriendNoteRpcRow } from '@/lib/friendNotes'
 import { getPinState, sortVisitsReverseChronological } from '@/lib/mapUtils'
@@ -47,8 +47,8 @@ export default function Sidebar({
   const [visits, setVisits] = useState<Visit[]>(() =>
     sortVisitsReverseChronological(destination?.visits ?? [])
   )
-  const [placeNotes, setPlaceNotes] = useState<PlaceNote[]>([])
-  const [friendNotes, setFriendNotes] = useState<FriendPlaceNote[]>([])
+  const [placeNotes, setPlaceNotes] = useState<Place[]>([])
+  const [friendNotes, setFriendNotes] = useState<FriendPlace[]>([])
   const [friendNotesLoading, setFriendNotesLoading] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [deleteConfirmInMenu, setDeleteConfirmInMenu] = useState(false)
@@ -102,7 +102,7 @@ export default function Sidebar({
     let cancelled = false
     async function fetchNotes() {
       const { data } = await supabase
-        .from('place_notes')
+        .from('places')
         .select('*')
         .eq('destination_id', destination!.id)
         .eq('user_id', user!.id)
@@ -269,7 +269,7 @@ export default function Sidebar({
     setShowAddVisit(false)
   }
 
-  function handleNoteChange(updated: PlaceNote) {
+  function handleNoteChange(updated: Place) {
     setPlaceNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
   }
 
@@ -277,7 +277,7 @@ export default function Sidebar({
     setPlaceNotes((prev) => prev.filter((n) => n.id !== noteId))
   }
 
-  function handleNoteSaved(note: PlaceNote) {
+  function handleNoteSaved(note: Place) {
     setPlaceNotes((prev) => [note, ...prev])
     setShowAddPlace(false)
   }

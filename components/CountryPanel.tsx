@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Country, Destination, CountryStatus } from '@/lib/types'
+import { CountryFill, Destination, CountryStatus } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import {
   buildFriendLocationGroups,
@@ -18,10 +18,10 @@ import type { FriendLocationSidebarPreview } from '@/lib/friendCountryGroups'
 interface CountryPanelProps {
   countryCode: string | null
   countryName: string
-  countries: Country[]
+  countries: CountryFill[]
   destinations: Destination[]
   onClose: () => void
-  onCountryUpdate: (country: Country) => void
+  onCountryUpdate: (country: CountryFill) => void
   onCountryRemove: (countryId: string) => void
   onDestinationClick: (dest: Destination) => void
   onFriendLocationPreview: (preview: FriendLocationSidebarPreview) => void
@@ -94,7 +94,7 @@ export default function CountryPanel({
   async function handleStatusChange(status: CountryStatus | 'remove') {
     if (status === 'remove') {
       if (country) {
-        await supabase.from('countries').delete().eq('id', country.id)
+        await supabase.from('country_fills').delete().eq('id', country.id)
         onCountryRemove(country.id)
       }
       return
@@ -102,7 +102,7 @@ export default function CountryPanel({
 
     if (country) {
       const { data } = await supabase
-        .from('countries')
+        .from('country_fills')
         .update({ status })
         .eq('id', country.id)
         .select()
@@ -111,7 +111,7 @@ export default function CountryPanel({
     } else {
       const continent = getContinentFromCode(code)
       const { data } = await supabase
-        .from('countries')
+        .from('country_fills')
         .insert({
           user_id: user?.id,
           country_code: code,

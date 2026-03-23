@@ -2,14 +2,14 @@
 
 import { useMemo } from 'react'
 import { Source, Layer, LayerProps } from 'react-map-gl'
-import { Country, MapMode } from '@/lib/types'
+import { CountryFill, MapMode } from '@/lib/types'
 
 const VISITED_COLOR = '#E8735A'
 const LIVED_COLOR = '#2D6A4F'
 const DEFAULT_COLOR = '#D8D4C8'
 
 interface CountryLayerProps {
-  countries: Country[]
+  countries: CountryFill[]
   mode: MapMode
 }
 

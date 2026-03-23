@@ -42,7 +42,7 @@ as $$
     d.name as destination_name,
     pn.created_at,
     pn.category_emoji
-  from place_notes pn
+  from places pn
   join destinations d on d.id = pn.destination_id
   join users        u on u.id  = pn.user_id
   where
