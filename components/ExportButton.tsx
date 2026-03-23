@@ -8,7 +8,7 @@ export default function ExportButton({ setExportModalOpen }: ExportButtonProps) 
   return (
     <button
       onClick={() => setExportModalOpen(true)}
-      className="fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-20 bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-xl p-2.5 md:pl-3.5 md:pr-4 md:py-2.5 text-sm font-medium text-gray-700 hover:bg-white transition-all flex items-center gap-2"
+      className="fixed top-[calc(1rem+env(safe-area-inset-top))] right-4 z-20 bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-xl px-3 py-3 md:pl-3.5 md:pr-4 md:py-3 text-sm font-medium text-gray-700 hover:bg-white transition-all flex items-center gap-2 border border-gray-100"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
         <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
