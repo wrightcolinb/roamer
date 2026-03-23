@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { PlaceNote, Sentiment } from '@/lib/types'
+import { Place, Sentiment } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
 import { getPlaceCategoryId } from '@/lib/placeCategory'
 import { useUser } from '@/lib/UserContext'
@@ -9,7 +9,7 @@ import { useUser } from '@/lib/UserContext'
 interface PlaceNoteInputProps {
   destinationId: string
   countryCode: string
-  onSave: (note: PlaceNote) => void
+  onSave: (place: Place) => void
   onCancel: () => void
 }
 
@@ -34,8 +34,10 @@ export default function PlaceNoteInput({
   const [placeName, setPlaceName] = useState('')
   const [note, setNote] = useState('')
   const [selectedSentiment, setSelectedSentiment] = useState<Sentiment>('recommend')
-  const [predictions, setPredictions] = useState<{ placeId: string; text: string }[]>([])
+  const [predictions, setPredictions] = useState<{ placeId: string; text: string; placePrediction: any }[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
+  const [selectedLat, setSelectedLat] = useState<number | null>(null)
+  const [selectedLng, setSelectedLng] = useState<number | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
@@ -70,6 +72,7 @@ export default function PlaceNoteInput({
           .map((s: any) => ({
             placeId: s.placePrediction.placeId,
             text: s.placePrediction.text.text,
+            placePrediction: s.placePrediction,
           }))
       )
       setIsOpen(true)
@@ -81,6 +84,8 @@ export default function PlaceNoteInput({
   function handleInputChange(value: string) {
     setPlaceName(value)
     setSelectedPlaceId(null)
+    setSelectedLat(null)
+    setSelectedLng(null)
     clearTimeout(debounceRef.current)
 
     if (value.length < 2) {
@@ -94,12 +99,24 @@ export default function PlaceNoteInput({
     }, 300)
   }
 
-  function handleSelectPrediction(p: { placeId: string; text: string }) {
+  async function handleSelectPrediction(p: { placeId: string; text: string; placePrediction: any }) {
     setPlaceName(p.text)
     setSelectedPlaceId(p.placeId)
     setPredictions([])
     setIsOpen(false)
     sessionTokenRef.current = null
+
+    // Fetch lat/lng from the Places API (mirrors SearchBar.tsx pattern)
+    try {
+      const place = p.placePrediction.toPlace()
+      await place.fetchFields({ fields: ['location'] })
+      setSelectedLat(place.location.lat())
+      setSelectedLng(place.location.lng())
+    } catch {
+      // lat/lng will be null — place still saves without coordinates
+      setSelectedLat(null)
+      setSelectedLng(null)
+    }
   }
 
   async function handleSave() {
@@ -110,12 +127,14 @@ export default function PlaceNoteInput({
     const categoryId = getPlaceCategoryId(trimmedName)
 
     const { data } = await supabase
-      .from('place_notes')
+      .from('places')
       .insert({
         user_id: user?.id,
         destination_id: destinationId,
         place_name: trimmedName,
         place_id: selectedPlaceId,
+        lat: selectedLat,
+        lng: selectedLng,
         sentiment: selectedSentiment,
         category_emoji: categoryId,
         note: note.trim(),

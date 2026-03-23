@@ -12,7 +12,7 @@ export type Sentiment = 'recommend' | 'meh' | 'skip'
 export type Continent = 'Africa' | 'Asia' | 'Europe' | 'North America' | 'South America' | 'Oceania' | 'Antarctica'
 export type MapMode = 'fill' | 'explore'
 
-export interface Country {
+export interface CountryFill {
   id: string
   country_code: string
   country_name: string
@@ -47,14 +47,16 @@ export interface Destination {
   next_up_year?: number
   created_at: string
   visits: Visit[]
-  place_notes?: PlaceNote[]
+  places?: Place[]
 }
 
-export interface PlaceNote {
+export interface Place {
   id: string
   destination_id: string
   place_name: string
   place_id?: string
+  lat?: number
+  lng?: number
   sentiment: Sentiment
   category_emoji: string
   note: string
@@ -62,7 +64,7 @@ export interface PlaceNote {
 }
 
 /** Row from get_friend_notes / get_friend_notes_for_country RPCs (other users' notes). */
-export interface FriendPlaceNote {
+export interface FriendPlace {
   id: string
   place_name: string
   note: string

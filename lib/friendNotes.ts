@@ -1,4 +1,4 @@
-import { FriendPlaceNote, Sentiment } from '@/lib/types'
+import { FriendPlace, Sentiment } from '@/lib/types'
 
 /** Maps rows from get_friend_notes / get_friend_notes_for_country RPCs. */
 export function mapFriendNoteRpcRow(row: {
@@ -12,7 +12,7 @@ export function mapFriendNoteRpcRow(row: {
   destination_name?: string | null
   created_at?: string | null
   category_emoji?: string | null
-}): FriendPlaceNote {
+}): FriendPlace {
   return {
     id: row.id,
     place_name: row.place_name,

@@ -1,9 +1,9 @@
 'use client'
 
-import { Country, Destination } from '@/lib/types'
+import { CountryFill, Destination } from '@/lib/types'
 
 interface StatBlockProps {
-  countries: Country[]
+  countries: CountryFill[]
   destinations: Destination[]
   displayName: string
 }

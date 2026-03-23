@@ -1,6 +1,6 @@
 'use client'
 
-import { FriendPlaceNote } from '@/lib/types'
+import { FriendPlace } from '@/lib/types'
 import { SENTIMENT_QUOTE_COLORS } from '@/lib/mapUtils'
 import { PlaceCategoryIcon } from '@/lib/placeCategoryIcon'
 
@@ -13,7 +13,7 @@ function hashStringToHue(input: string): number {
   return Math.abs(hash) % 360
 }
 
-function formatFriendYear(note: FriendPlaceNote): string | null {
+function formatFriendYear(note: FriendPlace): string | null {
   if (note.visit_year != null) return String(note.visit_year)
   if (note.created_at) {
     const y = new Date(note.created_at).getFullYear()
@@ -37,7 +37,7 @@ export function FriendAvatar({ displayName, seed }: { displayName: string; seed:
 }
 
 interface FriendPlaceNoteRowProps {
-  note: FriendPlaceNote
+  note: FriendPlace
 }
 
 export default function FriendPlaceNoteRow({ note }: FriendPlaceNoteRowProps) {
